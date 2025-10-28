@@ -118,23 +118,24 @@ These agents are specialized prompts designed for Claude Code Pro's Task tool. W
 ```
 claude-agents/
 ├── .claude/
-│   └── agents/                    # Agent definitions
-│       ├── AGENTS_REGISTRY.md     # Complete agent catalog
-│       ├── docker-specialist.md   # Docker agent prompt
-│       ├── security-specialist.md # Security agent prompt
-│       ├── test-specialist.md     # Testing agent prompt
-│       └── ...                    # Other agent prompts
-├── agents/                        # Original Python implementations (reference)
-│   ├── infrastructure/
-│   ├── development/
-│   ├── quality/
-│   ├── operations/
-│   ├── productivity/
-│   ├── business/
-│   └── specialized/
-├── CLAUDE_CODE_USAGE.md          # Comprehensive usage guide
-├── README.md                      # This file
-└── setup-guide.md                 # Original setup documentation
+│   ├── agents/                      # Agent prompt definitions
+│   │   ├── AGENTS_REGISTRY.md       # Complete agent catalog
+│   │   ├── docker-specialist.md     # Docker agent prompt
+│   │   ├── security-specialist.md   # Security agent prompt
+│   │   ├── test-specialist.md       # Testing agent prompt
+│   │   └── ...                      # Other agent prompts
+│   └── settings.local.json          # Claude Code settings
+├── archive/                         # Legacy code (reference only)
+│   ├── legacy-python-implementation/ # Original Python agents
+│   ├── legacy-setup/                # Old setup scripts
+│   └── README.md                    # Archive documentation
+├── examples/                        # Usage examples
+│   └── README.md                    # Example workflows
+├── scripts/                         # Utility scripts
+│   └── recommend_agents.sh          # Agent recommendation script
+├── CLAUDE_CODE_USAGE.md            # Comprehensive usage guide
+├── GETTING_STARTED.md              # Beginner's guide
+└── README.md                        # This file
 ```
 
 ## Agent Reference
@@ -187,9 +188,11 @@ Step 5: "Use documentation-specialist to generate API documentation"
 
 ## Documentation
 
+- **[GETTING_STARTED.md](GETTING_STARTED.md)** - Beginner's guide to getting started
 - **[CLAUDE_CODE_USAGE.md](CLAUDE_CODE_USAGE.md)** - Comprehensive usage guide with examples
 - **[.claude/agents/AGENTS_REGISTRY.md](.claude/agents/AGENTS_REGISTRY.md)** - Complete agent catalog
-- **[setup-guide.md](setup-guide.md)** - Original setup documentation
+- **[examples/README.md](examples/README.md)** - Real-world usage examples and workflows
+- **[archive/README.md](archive/README.md)** - Information about legacy implementations
 
 ## Contributing
 
