@@ -1,0 +1,9 @@
+# No dependencies required for Claude Code Pro usage
+# The agents work directly within Claude Code
+
+# If you want to use the legacy Python implementations:
+# anthropic>=0.40.0
+# python-dotenv>=1.0.0
+# pyyaml>=6.0
+# pytest>=7.4.0
+# pytest-asyncio>=0.21.0
