@@ -2,7 +2,16 @@
   "permissions": {
     "allow": [
       "Bash(awk:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(bash:*)",
+      "Bash(for agent in observability-specialist database-specialist mobile-specialist security-specialist code-review-specialist refactoring-specialist performance-specialist dependency-specialist git-specialist scaffolding-specialist debugging-specialist validation-specialist architecture-specialist localization-specialist compliance-specialist data-science-specialist)",
+      "Bash(do)",
+      "Bash(if [ -f \".claude/agents/$agent.md\" ])",
+      "Bash(then)",
+      "Bash(echo:*)",
+      "Bash(else)",
+      "Bash(fi)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []

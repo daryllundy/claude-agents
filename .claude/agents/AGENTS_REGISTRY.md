@@ -1,6 +1,6 @@
 # Claude Code Agents Registry
 
-This registry contains 24 specialized AI agents that can be invoked as sub-agents within Claude Code Pro.
+This registry contains 22 specialized AI agents that can be invoked as sub-agents within Claude Code Pro.
 
 ## How to Use These Agents
 
