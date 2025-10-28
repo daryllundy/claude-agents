@@ -60,10 +60,18 @@ A comprehensive collection of 24 specialized AI agents designed for **Claude Cod
 
 1. **Clone or reference this repository**:
    ```bash
-   git clone https://github.com/yourusername/claude-code-agents.git
+   git clone https://github.com/daryllundy/claude-agents.git
    ```
 
-2. **That's it!** No API keys or dependencies needed. The agents work directly within Claude Code Pro.
+2. **(Optional) Auto-install recommended agents in another project**:
+   ```bash
+   curl -sSL https://raw.githubusercontent.com/daryllundy/claude-agents/main/scripts/recommend_agents.sh | bash
+   ```
+   Run the command from the root of your project repository. The script scans the
+   codebase, recommends relevant specialist agents, and downloads their prompt
+   files into `.claude/agents/`.
+
+3. **That's it!** No API keys or dependencies needed. The agents work directly within Claude Code Pro.
 
 ### Basic Usage
 
@@ -108,7 +116,7 @@ These agents are specialized prompts designed for Claude Code Pro's Task tool. W
 ## Project Structure
 
 ```
-claude-code-agents/
+claude-agents/
 ├── .claude/
 │   └── agents/                    # Agent definitions
 │       ├── AGENTS_REGISTRY.md     # Complete agent catalog
