@@ -4,18 +4,19 @@ This registry contains 22 specialized AI agents that can be invoked as sub-agent
 
 ## How to Use These Agents
 
-These agents are designed to be invoked using Claude Code's Task tool. Each agent is a specialized sub-agent with specific expertise.
+These agents are designed to be invoked using natural language within Claude Code Pro. Simply tell Claude Code to "use" a specific agent for your task. Each agent is a specialized sub-agent with specific expertise.
+
+**Important:** You don't need to write code to use these agents. Just use natural language to describe your task and mention which specialist agent you want.
 
 ### Invoking an Agent
 
-```python
-# Example: Invoke the Docker agent
-Task(
-    subagent_type="docker-specialist",
-    description="Create Dockerfile",
-    prompt="Create a production-ready Dockerfile for a Python Flask application with the following requirements: Python 3.11, gunicorn, health checks, and multi-stage build for optimization."
-)
+To invoke an agent, use natural language like:
+
 ```
+"Use the docker-specialist to create a production-ready Dockerfile for a Python Flask application with the following requirements: Python 3.11, gunicorn, health checks, and multi-stage build for optimization."
+```
+
+Claude Code Pro will automatically invoke the docker-specialist sub-agent to handle this task.
 
 ## Available Agents
 
@@ -168,49 +169,32 @@ Task(
 ## Agent Invocation Patterns
 
 ### Single Agent Task
-```python
-# Invoke one specialized agent
-Task(
-    subagent_type="security-specialist",
-    description="Security audit",
-    prompt="Perform a comprehensive security audit of the authentication system in the codebase. Check for SQL injection, XSS, CSRF, and authentication vulnerabilities."
-)
+
+Simply ask Claude Code to use a specific agent for your task:
+
+```
+"Use the security-specialist to perform a comprehensive security audit of the authentication system in the codebase. Check for SQL injection, XSS, CSRF, and authentication vulnerabilities."
 ```
 
 ### Sequential Agent Tasks
-```python
-# First agent
-Task(
-    subagent_type="scaffolding-specialist",
-    description="Create project structure",
-    prompt="Create a new FastAPI project structure with best practices"
-)
 
-# Then another agent after first completes
-Task(
-    subagent_type="test-specialist",
-    description="Add tests",
-    prompt="Create comprehensive tests for the FastAPI project that was just created"
-)
+For tasks that need to happen in sequence, describe them naturally and Claude Code will handle them in order:
+
+```
+"First, use the scaffolding-specialist to create a new FastAPI project structure with best practices. Then, use the test-specialist to create comprehensive tests for the FastAPI project that was just created."
 ```
 
-### Parallel Agent Tasks (if applicable)
-```python
-# Multiple independent agents in one message
-# Agent 1
-Task(
-    subagent_type="documentation-specialist",
-    description="Generate API docs",
-    prompt="Generate OpenAPI documentation for all API endpoints"
-)
+Alternatively, you can ask for each task separately after the previous one completes.
 
-# Agent 2 (in same message)
-Task(
-    subagent_type="test-specialist",
-    description="Add API tests",
-    prompt="Create integration tests for all API endpoints"
-)
+### Parallel Agent Tasks
+
+For independent tasks that can run in parallel, describe them together:
+
 ```
+"Use the documentation-specialist to generate OpenAPI documentation for all API endpoints, and also use the test-specialist to create integration tests for all API endpoints."
+```
+
+Claude Code Pro will intelligently handle running these agents as appropriate for your workflow.
 
 ## Best Practices
 

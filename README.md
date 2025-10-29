@@ -1,10 +1,10 @@
 # Claude Code Agents
 
-A comprehensive collection of 24 specialized AI agents designed for **Claude Code Pro** users. These agents work as intelligent sub-agents that can be invoked within Claude Code to handle specific development tasks with deep domain expertise.
+A comprehensive collection of 22 specialized AI agents designed for **Claude Code Pro** users. These agents work as intelligent sub-agents that can be invoked within Claude Code to handle specific development tasks with deep domain expertise.
 
 ## Features
 
-- **24 Specialized Agents** organized into 6 categories
+- **22 Specialized Agents** organized into 6 categories
 - **Ready for Claude Code Pro** - Use as sub-agents via the Task tool
 - **Deep Domain Expertise** - Each agent specializes in a specific area
 - **No API Keys Required** - Works directly with Claude Code Pro
