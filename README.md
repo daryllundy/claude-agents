@@ -5,7 +5,7 @@ A comprehensive collection of 22 specialized AI agents and skills designed for *
 ## Features
 
 - **22 Specialized Agents** organized into 6 categories
-- **1 Claude Code Skill** for TikTok marketing strategy
+- **6 Claude Code Skills** for specialized marketing and e-commerce expertise
 - **Ready for Claude Code Pro** - Use as sub-agents via the Task tool or auto-discovered skills
 - **Deep Domain Expertise** - Each agent/skill specializes in a specific area
 - **No API Keys Required** - Works directly with Claude Code Pro
@@ -65,6 +65,31 @@ In addition to the 22 agents above, this repository includes **Claude Code Skill
 Create TikTok marketing strategies, develop viral content ideas, plan TikTok campaigns, and optimize for TikTok's algorithm. Automatically activated when discussing TikTok marketing, app launches, or viral content strategies.
 
 **Location**: `.claude/skills/tiktok-strategist/SKILL.md`
+
+#### instagram-specialist
+Create Instagram marketing strategies, develop engaging Reels and Stories content, optimize for Instagram's algorithm, and build authentic brand communities. Automatically activated when discussing Instagram marketing, influencer partnerships, or visual storytelling.
+
+**Location**: `.claude/skills/instagram-specialist/SKILL.md`
+
+#### web-design-specialist
+Create modern, accessible, and conversion-optimized web designs. Expert in UX/UI best practices, responsive design, design systems, and accessibility (WCAG). Automatically activated when discussing web design, user experience, or design systems.
+
+**Location**: `.claude/skills/web-design-specialist/SKILL.md`
+
+#### social-media-specialist
+Develop comprehensive multi-platform social media strategies, create engaging content, manage communities, and run data-driven campaigns. Automatically activated when discussing social media strategy, community management, or cross-platform marketing.
+
+**Location**: `.claude/skills/social-media-specialist/SKILL.md`
+
+#### shopify-specialist
+Build and optimize Shopify e-commerce stores, customize themes with Liquid, implement conversion optimization strategies, and integrate apps and payment systems. Automatically activated when discussing Shopify development, e-commerce optimization, or online stores.
+
+**Location**: `.claude/skills/shopify-specialist/SKILL.md`
+
+#### zapier-specialist
+Design and implement powerful workflow automations using Zapier, integrate 6000+ apps without code, and automate business processes. Automatically activated when discussing workflow automation, app integrations, or process optimization.
+
+**Location**: `.claude/skills/zapier-specialist/SKILL.md`
 
 ## Quick Start
 
@@ -142,8 +167,18 @@ claude-agents/
 │   │   ├── test-specialist.md       # Testing agent prompt
 │   │   └── ...                      # Other agent prompts
 │   ├── skills/                      # Skill definitions (auto-discovery)
-│   │   └── tiktok-strategist/       # TikTok marketing skill
-│   │       └── SKILL.md             # Skill prompt
+│   │   ├── tiktok-strategist/       # TikTok marketing skill
+│   │   │   └── SKILL.md
+│   │   ├── instagram-specialist/    # Instagram marketing skill
+│   │   │   └── SKILL.md
+│   │   ├── web-design-specialist/   # Web design and UX/UI skill
+│   │   │   └── SKILL.md
+│   │   ├── social-media-specialist/ # Multi-platform social media skill
+│   │   │   └── SKILL.md
+│   │   ├── shopify-specialist/      # Shopify e-commerce skill
+│   │   │   └── SKILL.md
+│   │   └── zapier-specialist/       # Workflow automation skill
+│   │       └── SKILL.md
 │   └── settings.local.json          # Claude Code settings
 ├── archive/                         # Legacy code (reference only)
 │   ├── legacy-python-implementation/ # Original Python agents
