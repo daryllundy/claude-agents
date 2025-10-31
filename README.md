@@ -1,11 +1,12 @@
 # Claude Code Agents
 
-A comprehensive collection of 22 specialized AI agents and skills designed for **Claude Code Pro** users. These agents and skills work as intelligent sub-agents that can be invoked within Claude Code to handle specific development tasks with deep domain expertise.
+A comprehensive collection of 23 specialized AI agents and skills designed for **Claude Code Pro** users. These agents and skills work as intelligent sub-agents that can be invoked within Claude Code to handle specific development tasks with deep domain expertise.
 
 ## Features
 
-- **22 Specialized Agents** organized into 6 categories
-- **6 Claude Code Skills** for specialized marketing and e-commerce expertise
+- **23 Specialized Agents** organized into 7 categories
+- **7 Claude Code Skills** for specialized marketing, e-commerce, and orchestration
+- **Orchestration System** for coordinating multi-specialist workflows
 - **Ready for Claude Code Pro** - Use as sub-agents via the Task tool or auto-discovered skills
 - **Deep Domain Expertise** - Each agent/skill specializes in a specific area
 - **No API Keys Required** - Works directly with Claude Code Pro
@@ -50,9 +51,12 @@ A comprehensive collection of 22 specialized AI agents and skills designed for *
 ### Specialized (1 agent)
 - **data-science-specialist** - ML pipelines, data analysis, and visualization
 
+### Orchestration (1 agent)
+- **e-commerce-coordinator** - Coordinates multi-specialist e-commerce transformation workflows
+
 ## Skills
 
-In addition to the 22 agents above, this repository includes **Claude Code Skills** - a newer format that allows Claude to automatically discover and use specialized capabilities.
+In addition to the 23 agents above, this repository includes **Claude Code Skills** - a newer format that allows Claude to automatically discover and use specialized capabilities.
 
 ### What's the Difference?
 
@@ -90,6 +94,11 @@ Build and optimize Shopify e-commerce stores, customize themes with Liquid, impl
 Design and implement powerful workflow automations using Zapier, integrate 6000+ apps without code, and automate business processes. Automatically activated when discussing workflow automation, app integrations, or process optimization.
 
 **Location**: `.claude/skills/zapier-specialist/SKILL.md`
+
+#### e-commerce-orchestrator
+Comprehensive e-commerce website auditor and strategist that analyzes URLs, scores performance across 6 dimensions, coordinates specialist consultations, and guides interactive improvement workflows. Automatically activated when analyzing e-commerce websites or discussing comprehensive store audits.
+
+**Location**: `.claude/skills/e-commerce-orchestrator/SKILL.md`
 
 ## Quick Start
 
@@ -162,6 +171,7 @@ claude-agents/
 ├── .claude/
 │   ├── agents/                      # Agent prompt definitions (Task tool)
 │   │   ├── AGENTS_REGISTRY.md       # Complete agent catalog
+│   │   ├── e-commerce-coordinator.md # E-commerce orchestration agent
 │   │   ├── docker-specialist.md     # Docker agent prompt
 │   │   ├── security-specialist.md   # Security agent prompt
 │   │   ├── test-specialist.md       # Testing agent prompt
@@ -177,7 +187,9 @@ claude-agents/
 │   │   │   └── SKILL.md
 │   │   ├── shopify-specialist/      # Shopify e-commerce skill
 │   │   │   └── SKILL.md
-│   │   └── zapier-specialist/       # Workflow automation skill
+│   │   ├── zapier-specialist/       # Workflow automation skill
+│   │   │   └── SKILL.md
+│   │   └── e-commerce-orchestrator/ # E-commerce audit and orchestration skill
 │   │       └── SKILL.md
 │   └── settings.local.json          # Claude Code settings
 ├── archive/                         # Legacy code (reference only)
@@ -229,6 +241,28 @@ Step 5: "Use documentation-specialist to generate API documentation"
 ### Example 4: Containerization
 ```
 "Use docker-specialist to create an optimized multi-stage Dockerfile for this Node.js application"
+```
+
+### Example 5: E-Commerce Transformation
+```
+# Orchestrated multi-specialist workflow
+Step 1: "Analyze https://mystore.com"  # e-commerce-orchestrator skill auto-activates
+        → Detects platform, scores 6 dimensions, presents priorities
+
+Step 2: User chooses "Mobile UX" (scored 3/10)
+        → "Use web-design-specialist to redesign for mobile-first approach"
+
+Step 3: After mobile improvements, return to orchestrator
+        → "What should we tackle next?"
+        → User chooses "Instagram integration"
+
+Step 4: "Use instagram-specialist to launch Instagram Shopping and Reels strategy"
+
+Step 5: Continue workflow through remaining priorities
+        → "Use zapier-specialist to automate order processing"
+
+Alternative: "Use e-commerce-coordinator to execute the full transformation roadmap"
+            → Coordinates all specialists through 8-week transformation plan
 ```
 
 ## Best Practices
