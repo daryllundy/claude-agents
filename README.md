@@ -1,12 +1,13 @@
 # Claude Code Agents
 
-A comprehensive collection of 22 specialized AI agents designed for **Claude Code Pro** users. These agents work as intelligent sub-agents that can be invoked within Claude Code to handle specific development tasks with deep domain expertise.
+A comprehensive collection of 22 specialized AI agents and skills designed for **Claude Code Pro** users. These agents and skills work as intelligent sub-agents that can be invoked within Claude Code to handle specific development tasks with deep domain expertise.
 
 ## Features
 
 - **22 Specialized Agents** organized into 6 categories
-- **Ready for Claude Code Pro** - Use as sub-agents via the Task tool
-- **Deep Domain Expertise** - Each agent specializes in a specific area
+- **1 Claude Code Skill** for TikTok marketing strategy
+- **Ready for Claude Code Pro** - Use as sub-agents via the Task tool or auto-discovered skills
+- **Deep Domain Expertise** - Each agent/skill specializes in a specific area
 - **No API Keys Required** - Works directly with Claude Code Pro
 - **Detailed Agent Prompts** - Pre-configured with best practices and expertise
 - **Easy to Invoke** - Simple natural language requests
@@ -48,6 +49,22 @@ A comprehensive collection of 22 specialized AI agents designed for **Claude Cod
 
 ### Specialized (1 agent)
 - **data-science-specialist** - ML pipelines, data analysis, and visualization
+
+## Skills
+
+In addition to the 22 agents above, this repository includes **Claude Code Skills** - a newer format that allows Claude to automatically discover and use specialized capabilities.
+
+### What's the Difference?
+
+- **Agents** (`.claude/agents/`): Explicitly invoked via Task tool with "Use the X-specialist..." syntax
+- **Skills** (`.claude/skills/`): Automatically discovered and loaded by Claude based on task context
+
+### Available Skills
+
+#### tiktok-strategist
+Create TikTok marketing strategies, develop viral content ideas, plan TikTok campaigns, and optimize for TikTok's algorithm. Automatically activated when discussing TikTok marketing, app launches, or viral content strategies.
+
+**Location**: `.claude/skills/tiktok-strategist/SKILL.md`
 
 ## Quick Start
 
@@ -118,12 +135,15 @@ These agents are specialized prompts designed for Claude Code Pro's Task tool. W
 ```
 claude-agents/
 ├── .claude/
-│   ├── agents/                      # Agent prompt definitions
+│   ├── agents/                      # Agent prompt definitions (Task tool)
 │   │   ├── AGENTS_REGISTRY.md       # Complete agent catalog
 │   │   ├── docker-specialist.md     # Docker agent prompt
 │   │   ├── security-specialist.md   # Security agent prompt
 │   │   ├── test-specialist.md       # Testing agent prompt
 │   │   └── ...                      # Other agent prompts
+│   ├── skills/                      # Skill definitions (auto-discovery)
+│   │   └── tiktok-strategist/       # TikTok marketing skill
+│   │       └── SKILL.md             # Skill prompt
 │   └── settings.local.json          # Claude Code settings
 ├── archive/                         # Legacy code (reference only)
 │   ├── legacy-python-implementation/ # Original Python agents
