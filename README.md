@@ -1,12 +1,24 @@
 # Claude Code Agents
 
-A comprehensive collection of 23 specialized AI agents and skills designed for **Claude Code Pro** users. These agents and skills work as intelligent sub-agents that can be invoked within Claude Code to handle specific development tasks with deep domain expertise.
+A comprehensive collection of specialized AI agents and skills designed for **Claude Code Pro** users. These agents and skills work as intelligent sub-agents that can be invoked within Claude Code to handle specific development, marketing, and e-commerce tasks with deep domain expertise.
+
+## What's New: E-Commerce Orchestration System
+
+The newest and most powerful feature of this collection is the **intelligent orchestration system** for e-commerce transformation:
+
+- **E-Commerce Orchestrator Skill**: Automatically analyzes e-commerce websites, scores them across 6 critical dimensions, and recommends the right specialists at the right time
+- **E-Commerce Coordinator Agent**: Orchestrates multi-week transformation projects, tracking progress and coordinating specialist consultations
+- **6-Dimensional Scoring**: Design & UX, Platform Optimization, Marketing, Social Media, Automation, and Performance
+- **Auto-Discovery**: Simply paste an e-commerce URL and watch the orchestrator identify issues and route to specialists
+- **Proven Workflow Patterns**: Pre-configured sequences for new launches, store revivals, scaling, and market expansion
+
+**Example**: "Analyze https://mystore.com" → Orchestrator identifies issues → Routes to web-design-specialist, shopify-specialist, instagram-specialist, and zapier-specialist in the optimal sequence → Tracks results and ROI.
 
 ## Features
 
-- **23 Specialized Agents** organized into 7 categories
+- **24 Specialized Agents** organized into 8 categories (including orchestration)
 - **7 Claude Code Skills** for specialized marketing, e-commerce, and orchestration
-- **Orchestration System** for coordinating multi-specialist workflows
+- **Intelligent Orchestration** - Coordinate multi-specialist workflows automatically
 - **Ready for Claude Code Pro** - Use as sub-agents via the Task tool or auto-discovered skills
 - **Deep Domain Expertise** - Each agent/skill specializes in a specific area
 - **No API Keys Required** - Works directly with Claude Code Pro
@@ -14,6 +26,10 @@ A comprehensive collection of 23 specialized AI agents and skills designed for *
 - **Easy to Invoke** - Simple natural language requests
 
 ## Agent Categories
+
+### Orchestration (1 agent)
+**NEW!** Intelligent workflow coordination for e-commerce transformation:
+- **e-commerce-coordinator** - Orchestrates multi-specialist e-commerce projects, tracks progress across 8-week transformation roadmaps, synthesizes results from design, platform, marketing, and automation specialists
 
 ### Infrastructure (3 agents)
 - **docker-specialist** - Container configuration and optimization
@@ -51,54 +67,79 @@ A comprehensive collection of 23 specialized AI agents and skills designed for *
 ### Specialized (1 agent)
 - **data-science-specialist** - ML pipelines, data analysis, and visualization
 
-### Orchestration (1 agent)
-- **e-commerce-coordinator** - Coordinates multi-specialist e-commerce transformation workflows
-
 ## Skills
 
-In addition to the 23 agents above, this repository includes **Claude Code Skills** - a newer format that allows Claude to automatically discover and use specialized capabilities.
+In addition to the 24 agents above, this repository includes **7 Claude Code Skills** - a newer format that allows Claude to automatically discover and use specialized capabilities based on context.
 
 ### What's the Difference?
 
 - **Agents** (`.claude/agents/`): Explicitly invoked via Task tool with "Use the X-specialist..." syntax
 - **Skills** (`.claude/skills/`): Automatically discovered and loaded by Claude based on task context
 
+Think of agents as specialists you call by name, and skills as expertise that activates automatically when needed.
+
 ### Available Skills
 
-#### tiktok-strategist
-Create TikTok marketing strategies, develop viral content ideas, plan TikTok campaigns, and optimize for TikTok's algorithm. Automatically activated when discussing TikTok marketing, app launches, or viral content strategies.
+#### e-commerce-orchestrator (NEW!)
+**The Brain of E-Commerce Transformation**
 
-**Location**: `.claude/skills/tiktok-strategist/SKILL.md`
+Comprehensive e-commerce website auditor and strategist that analyzes URLs, detects platforms (Shopify, WooCommerce, etc.), scores performance across 6 critical dimensions, and intelligently routes to the right specialists at the right time.
 
-#### instagram-specialist
-Create Instagram marketing strategies, develop engaging Reels and Stories content, optimize for Instagram's algorithm, and build authentic brand communities. Automatically activated when discussing Instagram marketing, influencer partnerships, or visual storytelling.
+**Capabilities**:
+- Platform detection and analysis (Shopify, WooCommerce, BigCommerce, Magento, custom)
+- 6-dimensional scoring: Design & UX, Platform Optimization, Marketing, Social Media, Automation, Performance
+- Generates 20-30 prioritized findings with impact/effort estimates
+- Competitive benchmarking and ROI estimation
+- Intelligent specialist routing (recommends shopify-specialist, web-design-specialist, instagram-specialist, etc.)
+- Interactive workflow guidance with clear next steps
 
-**Location**: `.claude/skills/instagram-specialist/SKILL.md`
+**Auto-activates when**: Analyzing e-commerce URLs, discussing store audits, asking about conversion optimization
 
-#### web-design-specialist
-Create modern, accessible, and conversion-optimized web designs. Expert in UX/UI best practices, responsive design, design systems, and accessibility (WCAG). Automatically activated when discussing web design, user experience, or design systems.
+**Example**: "Analyze https://mystore.com and tell me what to fix first"
 
-**Location**: `.claude/skills/web-design-specialist/SKILL.md`
-
-#### social-media-specialist
-Develop comprehensive multi-platform social media strategies, create engaging content, manage communities, and run data-driven campaigns. Automatically activated when discussing social media strategy, community management, or cross-platform marketing.
-
-**Location**: `.claude/skills/social-media-specialist/SKILL.md`
+**Location**: `.claude/skills/e-commerce-orchestrator/SKILL.md`
 
 #### shopify-specialist
-Build and optimize Shopify e-commerce stores, customize themes with Liquid, implement conversion optimization strategies, and integrate apps and payment systems. Automatically activated when discussing Shopify development, e-commerce optimization, or online stores.
+Build and optimize Shopify e-commerce stores, customize themes with Liquid, implement conversion optimization strategies, and integrate apps and payment systems. Expert in checkout optimization, product page design, and Shopify-specific best practices.
+
+**Auto-activates when**: Discussing Shopify development, e-commerce optimization, or online store improvements
 
 **Location**: `.claude/skills/shopify-specialist/SKILL.md`
 
+#### web-design-specialist
+Create modern, accessible, and conversion-optimized web designs. Expert in UX/UI best practices, responsive design, design systems, and accessibility (WCAG). Focuses on mobile-first approach and user-centered design.
+
+**Auto-activates when**: Discussing web design, user experience, mobile optimization, or design systems
+
+**Location**: `.claude/skills/web-design-specialist/SKILL.md`
+
+#### instagram-specialist
+Create Instagram marketing strategies, develop engaging Reels and Stories content, optimize for Instagram's algorithm, and build authentic brand communities. Expert in Instagram Shopping, influencer partnerships, and visual storytelling.
+
+**Auto-activates when**: Discussing Instagram marketing, influencer partnerships, or visual social media strategy
+
+**Location**: `.claude/skills/instagram-specialist/SKILL.md`
+
+#### tiktok-strategist
+Create TikTok marketing strategies, develop viral content ideas, plan TikTok campaigns, and optimize for TikTok's algorithm. Expert in reaching Gen Z audiences, creator partnerships, and viral content mechanics.
+
+**Auto-activates when**: Discussing TikTok marketing, viral content, or targeting younger demographics
+
+**Location**: `.claude/skills/tiktok-strategist/SKILL.md`
+
+#### social-media-specialist
+Develop comprehensive multi-platform social media strategies, create engaging content, manage communities, and run data-driven campaigns. Expert in cross-platform coordination, content calendars, and community building.
+
+**Auto-activates when**: Discussing multi-platform social media strategy, community management, or content planning
+
+**Location**: `.claude/skills/social-media-specialist/SKILL.md`
+
 #### zapier-specialist
-Design and implement powerful workflow automations using Zapier, integrate 6000+ apps without code, and automate business processes. Automatically activated when discussing workflow automation, app integrations, or process optimization.
+Design and implement powerful workflow automations using Zapier, integrate 6000+ apps without code, and automate business processes. Expert in order processing automation, email sequences, and system integrations.
+
+**Auto-activates when**: Discussing workflow automation, app integrations, or process optimization
 
 **Location**: `.claude/skills/zapier-specialist/SKILL.md`
-
-#### e-commerce-orchestrator
-Comprehensive e-commerce website auditor and strategist that analyzes URLs, scores performance across 6 dimensions, coordinates specialist consultations, and guides interactive improvement workflows. Automatically activated when analyzing e-commerce websites or discussing comprehensive store audits.
-
-**Location**: `.claude/skills/e-commerce-orchestrator/SKILL.md`
 
 ## Quick Start
 
