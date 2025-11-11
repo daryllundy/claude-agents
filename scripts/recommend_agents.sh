@@ -39,6 +39,7 @@ Options:
   --dry-run              Only print recommended agents without downloading.
   --force                Redownload agent files even if they already exist locally.
   --min-confidence NUM   Only recommend agents with confidence >= NUM (0-100).
+  --verbose              Display detailed detection results with all patterns checked.
   --branch NAME          Override the claude-agents branch to download from.
   --repo URL             Override the base raw URL for the claude-agents repository.
   -h, --help             Show this help message.
@@ -52,6 +53,7 @@ USAGE
 
 FORCE=false
 MIN_CONFIDENCE=25  # Default minimum confidence threshold
+VERBOSE=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -61,6 +63,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --force)
       FORCE=true
+      shift
+      ;;
+    --verbose)
+      VERBOSE=true
       shift
       ;;
     --min-confidence)
@@ -144,6 +150,129 @@ search_contents() {
     grep -Rqs --exclude-dir='.git' "$pattern" .
     return $?
   fi
+}
+
+# Enhanced output formatting functions (Task 6)
+
+# Draw a progress bar for confidence visualization
+draw_progress_bar() {
+  local confidence="$1"
+  local bar_length=20
+  local filled=$((confidence * bar_length / 100))
+  local empty=$((bar_length - filled))
+
+  printf "["
+  for ((i=0; i<filled; i++)); do printf "█"; done
+  for ((i=0; i<empty; i++)); do printf "░"; done
+  printf "]"
+}
+
+# Get recommendation symbol based on confidence
+get_recommendation_symbol() {
+  local confidence="$1"
+  if [[ $confidence -ge 50 ]]; then
+    echo "✓"  # Recommended
+  else
+    echo "~"  # Suggested
+  fi
+}
+
+# Display agent with details
+display_agent_details() {
+  local agent="$1"
+  local confidence="${agent_confidence[$agent]:-0}"
+  local symbol=$(get_recommendation_symbol "$confidence")
+  local description="${AGENT_DESCRIPTIONS[$agent]:-No description available}"
+  local matched_patterns="${agent_matched_patterns[$agent]:-}"
+
+  printf "  %s %s " "$symbol" "$agent"
+  draw_progress_bar "$confidence"
+  printf " %d%%\n" "$confidence"
+
+  # Show description
+  if [[ -n "$description" ]]; then
+    printf "    %s\n" "$description"
+  fi
+
+  # Show matched patterns if not verbose (verbose shows all patterns later)
+  if [[ ! $VERBOSE == true ]] && [[ -n "$matched_patterns" ]]; then
+    printf "    Detected: %s\n" "$matched_patterns"
+  fi
+
+  echo ""
+}
+
+# Display categorized results
+display_categorized_results() {
+  # Define category order
+  local -a categories=(
+    "Infrastructure (Cloud)"
+    "Infrastructure (IaC)"
+    "Infrastructure (Platform)"
+    "Infrastructure (Containers)"
+    "Infrastructure (Monitoring)"
+    "Development"
+    "Quality"
+    "Operations"
+    "Productivity"
+    "Business"
+    "Specialized"
+  )
+
+  echo ""
+  echo "═══════════════════════════════════════════════════════════════════════"
+  echo "                     Agent Recommendation Results"
+  echo "═══════════════════════════════════════════════════════════════════════"
+  echo ""
+  echo "Found ${#recommended_agents[@]} recommended agents"
+  echo ""
+
+  # Group agents by category
+  declare -A category_agents
+  for agent in "${recommended_agents[@]}"; do
+    local category="${AGENT_CATEGORIES[$agent]:-Uncategorized}"
+    if [[ -z "${category_agents[$category]}" ]]; then
+      category_agents[$category]="$agent"
+    else
+      category_agents[$category]="${category_agents[$category]} $agent"
+    fi
+  done
+
+  # Display agents by category
+  for category in "${categories[@]}"; do
+    if [[ -n "${category_agents[$category]}" ]]; then
+      # Split agents string into array
+      IFS=' ' read -ra agents <<< "${category_agents[$category]}"
+
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      echo "$category (${#agents[@]} agent(s))"
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      echo ""
+
+      for agent in "${agents[@]}"; do
+        display_agent_details "$agent"
+      done
+    fi
+  done
+
+  # Display uncategorized agents if any
+  if [[ -n "${category_agents[Uncategorized]}" ]]; then
+    IFS=' ' read -ra agents <<< "${category_agents[Uncategorized]}"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "Other (${#agents[@]} agent(s))"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+
+    for agent in "${agents[@]}"; do
+      display_agent_details "$agent"
+    done
+  fi
+
+  echo "═══════════════════════════════════════════════════════════════════════"
+  echo ""
+  echo "Legend:"
+  echo "  ✓ = Recommended (50%+)    ~ = Suggested (25-49%)"
+  echo ""
 }
 
 # Parse AGENTS_REGISTRY.md to extract agent metadata
@@ -756,11 +885,59 @@ unset IFS
 
 recommended_agents=("${sorted_agents[@]}")
 
-log "Recommended agents (${#recommended_agents[@]} total):"
-for agent in "${recommended_agents[@]}"; do
-  confidence="${agent_confidence[$agent]:-0}"
-  log "  - $agent (confidence: ${confidence}%)"
-done
+# Display results using enhanced formatting
+if [[ ${#recommended_agents[@]} -gt 0 ]]; then
+  display_categorized_results
+else
+  log "No agents met the confidence threshold of ${MIN_CONFIDENCE}%"
+fi
+
+# Verbose mode: show detailed detection patterns
+if [[ $VERBOSE == true ]]; then
+  echo ""
+  echo "═══════════════════════════════════════════════════════════════════════"
+  echo "                     Detailed Detection Results (Verbose)"
+  echo "═══════════════════════════════════════════════════════════════════════"
+  echo ""
+
+  for agent in "${recommended_agents[@]}"; do
+    echo "Agent: $agent (Confidence: ${agent_confidence[$agent]:-0}%)"
+    echo "Matched Patterns:"
+
+    local patterns="${AGENT_PATTERNS[$agent]}"
+    while IFS= read -r pattern_line; do
+      [[ -z "$pattern_line" ]] && continue
+      pattern_line=$(echo "$pattern_line" | xargs)
+      [[ -z "$pattern_line" ]] && continue
+
+      type="${pattern_line%%:*}"
+      rest="${pattern_line#*:}"
+      weight="${rest##*:}"
+      pattern="${rest%:*}"
+
+      [[ -z "$type" || -z "$pattern" || -z "$weight" ]] && continue
+
+      # Check if pattern matched
+      local matched=false
+      case "$type" in
+        file) has_file "$pattern" && matched=true ;;
+        path) has_path "$pattern" && matched=true ;;
+        content) search_contents "$pattern" && matched=true ;;
+      esac
+
+      if [[ $matched == true ]]; then
+        echo "  ✓ $type:$pattern (weight: $weight)"
+      else
+        echo "  ✗ $type:$pattern (weight: $weight)"
+      fi
+    done <<< "$patterns"
+
+    echo ""
+  done
+
+  echo "═══════════════════════════════════════════════════════════════════════"
+  echo ""
+fi
 
 if $DRY_RUN; then
   exit 0
