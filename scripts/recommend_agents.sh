@@ -215,17 +215,27 @@ content:aws_:15
 file:cloudformation.yaml:15
 file:cloudformation.yml:15
 file:cdk.json:15
+file:cdk.context.json:15
 path:.aws:10
+path:cloudformation:15
 content:AWS::CloudFormation:15
+content:aws-cdk:10
+content:@aws-cdk:10
 "
 
   AGENT_PATTERNS["azure-specialist"]="
 file:*.bicep:20
 file:azuredeploy.json:15
+file:azuredeploy.parameters.json:10
 content:deploymentTemplate:15
+content:\$schema.*deploymentTemplate:15
 file:azure-pipelines.yml:15
-content:azurerm:15
+file:azure-pipelines.yaml:15
+content:provider \"azurerm\":20
+content:azurerm_:15
 content:Microsoft.Compute:10
+content:Microsoft.Resources:10
+path:.azure:10
 "
 
   AGENT_PATTERNS["gcp-specialist"]="
@@ -234,7 +244,12 @@ path:.config/gcloud:10
 content:provider \"google\":20
 content:google_:15
 file:deployment-manager.yaml:15
+file:*.jinja:10
+path:deployment:10
 content:gcp.googleapis.com:10
+content:googleapis.com:10
+content:gcloud:10
+file:cloudbuild.yaml:15
 "
 
   AGENT_PATTERNS["terraform-specialist"]="
