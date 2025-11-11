@@ -202,8 +202,45 @@ Design and implement powerful workflow automations using Zapier, integrate 6000+
    curl -sSL https://raw.githubusercontent.com/daryllundy/claude-agents/main/scripts/recommend_agents.sh | bash
    ```
    Run the command from the root of your project repository. The script scans the
-   codebase, recommends relevant specialist agents, and downloads their prompt
-   files into `.claude/agents/`.
+   codebase, recommends relevant specialist agents based on detected technologies,
+   and downloads their prompt files into `.claude/agents/`.
+
+   **Enhanced Features**:
+   - **Intelligent Detection**: Scans for 30+ technology patterns across cloud providers, IaC tools, frameworks, and more
+   - **Confidence Scoring**: Shows confidence levels (0-100%) for each recommendation with visual progress bars
+   - **Interactive Mode**: Select which agents to install with keyboard navigation (`--interactive`)
+   - **Profile Export/Import**: Save detection results and share agent configurations across projects (`--export`, `--import`)
+   - **Update Detection**: Check for and install updates to locally installed agents (`--check-updates`, `--update-all`)
+   - **Categorized Output**: Agents grouped by category (Infrastructure, Development, Quality, etc.)
+   - **Verbose Mode**: See detailed pattern matching results (`--verbose`)
+   - **Confidence Filtering**: Control recommendation threshold (`--min-confidence 50`)
+
+   **Example Usage**:
+   ```bash
+   # Standard recommendation with default threshold (25%)
+   bash scripts/recommend_agents.sh
+
+   # Interactive selection mode
+   bash scripts/recommend_agents.sh --interactive
+
+   # Export profile for sharing
+   bash scripts/recommend_agents.sh --export my-project-profile.json
+
+   # Import profile in another project
+   bash scripts/recommend_agents.sh --import my-project-profile.json
+
+   # Check for updates to installed agents
+   bash scripts/recommend_agents.sh --check-updates
+
+   # Update all agents to latest versions
+   bash scripts/recommend_agents.sh --update-all
+
+   # Verbose output with higher confidence threshold
+   bash scripts/recommend_agents.sh --verbose --min-confidence 50
+
+   # Dry run to see recommendations without downloading
+   bash scripts/recommend_agents.sh --dry-run
+   ```
 
 3. **That's it!** No API keys or dependencies needed. The agents work directly within Claude Code Pro.
 
@@ -425,6 +462,99 @@ Alternative: "Use e-commerce-coordinator to execute the full transformation road
 2. **Sequential Tasks**: For dependent tasks, execute one at a time
 3. **Provide Context**: Include file paths, technologies, and constraints
 4. **Review Output**: Always review agent results before proceeding
+
+## Troubleshooting
+
+### Agent Recommendation Script Issues
+
+#### Script fails to download agents
+**Problem**: Network errors or HTTP 404/403 errors
+
+**Solutions**:
+- Check your internet connection
+- Verify the repository is accessible: `curl -I https://raw.githubusercontent.com/daryllundy/claude-agents/main/.claude/agents/AGENTS_REGISTRY.md`
+- Try with `--branch main` to explicitly specify the branch
+- Use `--repo` flag to specify an alternative repository URL
+- The script automatically retries failed downloads 3 times with exponential backoff
+
+#### No agents recommended for my project
+**Problem**: Script shows "No agents met the confidence threshold"
+
+**Solutions**:
+- Lower the confidence threshold: `--min-confidence 15`
+- Use `--verbose` to see which patterns were checked
+- Check if your project files are in the current directory (script scans from where it's run)
+- For empty or new projects, the script recommends core agents (code-review, refactoring, test specialists)
+
+#### Interactive mode not working
+**Problem**: Arrow keys or keyboard input not responding
+
+**Solutions**:
+- Ensure you're running in a terminal that supports ANSI escape sequences
+- Try running directly instead of through `curl | bash`: `bash scripts/recommend_agents.sh --interactive`
+- Use standard mode without `--interactive` flag
+
+#### Export/Import fails
+**Problem**: JSON export or import errors
+
+**Solutions**:
+- For export: Ensure the target directory exists
+- For import: Verify the JSON file is valid with `cat profile.json | jq` (if jq is installed)
+- Use `--force` to overwrite existing export files
+- Check file permissions for read/write access
+
+#### Update detection shows false positives
+**Problem**: `--check-updates` shows updates when agents are current
+
+**Solutions**:
+- This can happen if local files have different line endings or whitespace
+- Use `--update-all` to ensure all agents are synchronized
+- Backups are automatically created before updates in `.claude/agents/.backup_<timestamp>/`
+
+### Agent Invocation Issues
+
+#### Claude Code doesn't recognize an agent
+**Problem**: "Agent not found" or similar error
+
+**Solutions**:
+- Verify the agent file exists in `.claude/agents/`
+- Check the filename matches the agent name (e.g., `docker-specialist.md`)
+- Restart Claude Code to reload agent definitions
+- Use exact agent names from AGENTS_REGISTRY.md
+
+#### Agent doesn't have the expected expertise
+**Problem**: Agent responses don't match the specialized domain
+
+**Solutions**:
+- Verify you're using the correct specialist (check AGENTS_REGISTRY.md)
+- Provide more specific context in your request
+- Check that the agent file hasn't been modified
+- Re-download the agent with `--force` flag
+
+### General Issues
+
+#### Permission denied errors
+**Problem**: Cannot create `.claude/agents/` directory
+
+**Solutions**:
+- Check write permissions in your project directory
+- Run with appropriate permissions (avoid `sudo` unless necessary)
+- Verify you're in the correct project directory
+
+#### Script runs but no output
+**Problem**: Script completes but shows no recommendations
+
+**Solutions**:
+- Remove `--dry-run` flag if you want to download agents
+- Check that you're running from your project root directory
+- Use `--verbose` to see detailed detection results
+- Try `--min-confidence 0` to see all possible agents
+
+For additional help, please open an issue on GitHub with:
+- The command you ran
+- The error message or unexpected behavior
+- Your operating system and shell version
+- Output of `bash scripts/recommend_agents.sh --verbose --dry-run` (if applicable)
 
 ## Documentation
 
