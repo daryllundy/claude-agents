@@ -43,6 +43,8 @@ Options:
   --interactive          Enter interactive mode to manually select agents.
   --export FILE          Export detection profile to JSON file.
   --import FILE          Import and install agents from a profile JSON file.
+  --check-updates        Check for updates to locally installed agents.
+  --update-all           Update all locally installed agents to latest versions.
   --branch NAME          Override the claude-agents branch to download from.
   --repo URL             Override the base raw URL for the claude-agents repository.
   -h, --help             Show this help message.
@@ -60,6 +62,8 @@ VERBOSE=false
 INTERACTIVE=false
 EXPORT_FILE=""
 IMPORT_FILE=""
+CHECK_UPDATES=false
+UPDATE_ALL=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -89,6 +93,14 @@ while [[ $# -gt 0 ]]; do
       shift
       [[ $# -gt 0 ]] || { echo "Missing value for --import" >&2; exit 1; }
       IMPORT_FILE="$1"
+      shift
+      ;;
+    --check-updates)
+      CHECK_UPDATES=true
+      shift
+      ;;
+    --update-all)
+      UPDATE_ALL=true
       shift
       ;;
     --min-confidence)
@@ -601,6 +613,133 @@ import_profile() {
     done
 
     log "Successfully installed $count agents from profile"
+  fi
+}
+
+# Update detection functionality (Task 10)
+check_updates() {
+  # Find all local agent files
+  local -a local_agents
+  if [[ ! -d "$AGENTS_DIR" ]]; then
+    log "No agents directory found. No agents to check."
+    return 0
+  fi
+
+  while IFS= read -r file; do
+    [[ -z "$file" ]] && continue
+    local agent=$(basename "$file" .md)
+    [[ "$agent" == "AGENTS_REGISTRY" ]] && continue
+    local_agents+=("$agent")
+  done < <(find "$AGENTS_DIR" -name "*.md" -type f)
+
+  if [[ ${#local_agents[@]} -eq 0 ]]; then
+    log "No agents installed locally"
+    return 0
+  fi
+
+  log "Checking for updates to ${#local_agents[@]} locally installed agents..."
+
+  local -a updates_available=()
+
+  for agent in "${local_agents[@]}"; do
+    local local_file="${AGENTS_DIR}/${agent}.md"
+    local remote_url="${BASE_URL}/${agent}.md"
+
+    # Get remote file and compare with local
+    local remote_content=$(curl -fsSL "$remote_url" 2>/dev/null)
+
+    if [[ -z "$remote_content" ]]; then
+      log "Warning: Could not fetch remote version of $agent"
+      continue
+    fi
+
+    # Compare content
+    local local_content=$(cat "$local_file")
+
+    if [[ "$remote_content" != "$local_content" ]]; then
+      updates_available+=("$agent")
+    fi
+  done
+
+  if [[ ${#updates_available[@]} -eq 0 ]]; then
+    log "All agents are up to date ✓"
+  else
+    log "Updates available for ${#updates_available[@]} agent(s):"
+    for agent in "${updates_available[@]}"; do
+      log "  - $agent"
+    done
+    log ""
+    log "Run with --update-all to update all agents"
+  fi
+
+  # Return count of updates
+  echo "${#updates_available[@]}"
+}
+
+update_all_agents() {
+  # Find all local agent files
+  local -a local_agents
+  if [[ ! -d "$AGENTS_DIR" ]]; then
+    log "No agents directory found. No agents to update."
+    return 0
+  fi
+
+  while IFS= read -r file; do
+    [[ -z "$file" ]] && continue
+    local agent=$(basename "$file" .md)
+    [[ "$agent" == "AGENTS_REGISTRY" ]] && continue
+    local_agents+=("$agent")
+  done < <(find "$AGENTS_DIR" -name "*.md" -type f)
+
+  if [[ ${#local_agents[@]} -eq 0 ]]; then
+    log "No agents installed locally"
+    return 0
+  fi
+
+  log "Checking and updating ${#local_agents[@]} agents..."
+
+  local updated_count=0
+  local backup_dir="${AGENTS_DIR}/.backup_$(date +%Y%m%d_%H%M%S)"
+
+  for agent in "${local_agents[@]}"; do
+    local local_file="${AGENTS_DIR}/${agent}.md"
+    local remote_url="${BASE_URL}/${agent}.md"
+
+    # Get remote file and compare with local
+    local remote_content=$(curl -fsSL "$remote_url" 2>/dev/null)
+
+    if [[ -z "$remote_content" ]]; then
+      log "Warning: Could not fetch remote version of $agent, skipping"
+      continue
+    fi
+
+    # Compare content
+    local local_content=$(cat "$local_file")
+
+    if [[ "$remote_content" != "$local_content" ]]; then
+      # Create backup directory if needed
+      if [[ ! -d "$backup_dir" ]]; then
+        mkdir -p "$backup_dir"
+      fi
+
+      # Backup existing file
+      cp "$local_file" "${backup_dir}/${agent}.md"
+      log "Backed up $agent to ${backup_dir}/${agent}.md"
+
+      # Download updated version
+      log "Updating $agent..."
+      echo "$remote_content" > "$local_file"
+      ((updated_count++))
+    fi
+  done
+
+  if [[ $updated_count -eq 0 ]]; then
+    log "All agents were already up to date ✓"
+  else
+    log "Updated $updated_count agent(s)"
+    if [[ -d "$backup_dir" ]]; then
+      log "Backups saved to $backup_dir"
+    fi
   fi
 }
 
@@ -1127,6 +1266,19 @@ if [[ -n "$IMPORT_FILE" ]]; then
 
   log "All done! Agent prompts are located in ${AGENTS_DIR}"
   exit 0
+fi
+
+# Handle update detection mode (Task 10)
+if [[ $CHECK_UPDATES == true ]] || [[ $UPDATE_ALL == true ]]; then
+  if [[ $CHECK_UPDATES == true ]]; then
+    check_updates
+    exit 0
+  fi
+
+  if [[ $UPDATE_ALL == true ]]; then
+    update_all_agents
+    exit 0
+  fi
 fi
 
 # Parse agent registry for metadata
