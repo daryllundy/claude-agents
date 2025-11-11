@@ -20,7 +20,11 @@
       "Bash(git add:*)",
       "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Enhance cloud provider detection patterns (Task 2)\n\n- Add comprehensive AWS detection including CDK context files, CloudFormation directories, and CDK content patterns\n- Enhance Azure detection with ARM template schemas, parameters, and azurerm Terraform provider\n- Improve GCP detection with Deployment Manager templates, Jinja files, and Cloud Build\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(git commit:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(git tag:*)",
+      "Bash(git push:*)",
+      "Bash(command -v:*)",
+      "Bash(gh:*)"
     ],
     "deny": [],
     "ask": []
