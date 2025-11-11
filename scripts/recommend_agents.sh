@@ -40,6 +40,7 @@ Options:
   --force                Redownload agent files even if they already exist locally.
   --min-confidence NUM   Only recommend agents with confidence >= NUM (0-100).
   --verbose              Display detailed detection results with all patterns checked.
+  --interactive          Enter interactive mode to manually select agents.
   --branch NAME          Override the claude-agents branch to download from.
   --repo URL             Override the base raw URL for the claude-agents repository.
   -h, --help             Show this help message.
@@ -54,6 +55,7 @@ USAGE
 FORCE=false
 MIN_CONFIDENCE=25  # Default minimum confidence threshold
 VERBOSE=false
+INTERACTIVE=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -67,6 +69,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --verbose)
       VERBOSE=true
+      shift
+      ;;
+    --interactive)
+      INTERACTIVE=true
       shift
       ;;
     --min-confidence)
@@ -273,6 +279,153 @@ display_categorized_results() {
   echo "Legend:"
   echo "  ✓ = Recommended (50%+)    ~ = Suggested (25-49%)"
   echo ""
+}
+
+# Interactive selection mode (Task 7)
+interactive_selection() {
+  local -a agent_list=("${recommended_agents[@]}")
+  local -A selected_agents
+  local current_index=0
+
+  # Pre-select agents above 50% confidence
+  for agent in "${agent_list[@]}"; do
+    local confidence="${agent_confidence[$agent]:-0}"
+    if [[ $confidence -ge 50 ]]; then
+      selected_agents[$agent]=1
+    fi
+  done
+
+  # Function to display the interactive UI
+  display_interactive_ui() {
+    clear
+    echo "═══════════════════════════════════════════════════════════════════════"
+    echo "            Agent Recommendation - Interactive Mode"
+    echo "═══════════════════════════════════════════════════════════════════════"
+    echo ""
+    echo "Use arrow keys to navigate, SPACE to toggle, ENTER to confirm"
+    echo "Commands: a=select all, n=select none, q=quit"
+    echo ""
+
+    # Group agents by category for display
+    declare -A category_agents
+    for agent in "${agent_list[@]}"; do
+      local category="${AGENT_CATEGORIES[$agent]:-Uncategorized}"
+      if [[ -z "${category_agents[$category]}" ]]; then
+        category_agents[$category]="$agent"
+      else
+        category_agents[$category]="${category_agents[$category]} $agent"
+      fi
+    done
+
+    local display_index=0
+    local -a categories=("Infrastructure (Cloud)" "Infrastructure (IaC)" "Infrastructure (Platform)" "Infrastructure (Containers)" "Infrastructure (Monitoring)" "Development" "Quality" "Operations" "Productivity" "Business" "Specialized" "Uncategorized")
+
+    for category in "${categories[@]}"; do
+      if [[ -n "${category_agents[$category]}" ]]; then
+        echo "━━ $category ━━"
+
+        IFS=' ' read -ra agents <<< "${category_agents[$category]}"
+        for agent in "${agents[@]}"; do
+          local confidence="${agent_confidence[$agent]:-0}"
+          local description="${AGENT_DESCRIPTIONS[$agent]:-}"
+
+          # Determine if this is the current selection
+          local cursor=" "
+          if [[ $display_index -eq $current_index ]]; then
+            cursor=">"
+          fi
+
+          # Determine if this agent is selected
+          local checkbox="[ ]"
+          if [[ ${selected_agents[$agent]:-0} -eq 1 ]]; then
+            checkbox="[✓]"
+          fi
+
+          # Display the agent
+          printf "%s %s %s (%d%%)\n" "$cursor" "$checkbox" "$agent" "$confidence"
+
+          # Show description if it's the current selection
+          if [[ $display_index -eq $current_index ]] && [[ -n "$description" ]]; then
+            printf "      %s\n" "$description"
+          fi
+
+          ((display_index++))
+        done
+        echo ""
+      fi
+    done
+
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    local selected_count=0
+    for agent in "${agent_list[@]}"; do
+      [[ ${selected_agents[$agent]:-0} -eq 1 ]] && ((selected_count++))
+    done
+    echo "Selected: $selected_count / ${#agent_list[@]} agents"
+  }
+
+  # Main interactive loop
+  while true; do
+    display_interactive_ui
+
+    # Read single character
+    read -rsn1 key
+
+    # Handle special keys (arrow keys start with escape sequence)
+    if [[ $key == $'\x1b' ]]; then
+      read -rsn2 key
+      case "$key" in
+        '[A')  # Up arrow
+          if [[ $current_index -gt 0 ]]; then
+            ((current_index--))
+          fi
+          ;;
+        '[B')  # Down arrow
+          if [[ $current_index -lt $((${#agent_list[@]} - 1)) ]]; then
+            ((current_index++))
+          fi
+          ;;
+      esac
+    else
+      case "$key" in
+        ' ')  # Space - toggle selection
+          local agent="${agent_list[$current_index]}"
+          if [[ ${selected_agents[$agent]:-0} -eq 1 ]]; then
+            unset selected_agents[$agent]
+          else
+            selected_agents[$agent]=1
+          fi
+          ;;
+        '')  # Enter - confirm selection
+          break
+          ;;
+        'a'|'A')  # Select all
+          for agent in "${agent_list[@]}"; do
+            selected_agents[$agent]=1
+          done
+          ;;
+        'n'|'N')  # Select none
+          selected_agents=()
+          ;;
+        'q'|'Q')  # Quit
+          echo ""
+          log "Cancelled by user"
+          exit 0
+          ;;
+      esac
+    fi
+  done
+
+  clear
+
+  # Return selected agents by updating recommended_agents array
+  recommended_agents=()
+  for agent in "${agent_list[@]}"; do
+    if [[ ${selected_agents[$agent]:-0} -eq 1 ]]; then
+      recommended_agents+=("$agent")
+    fi
+  done
+
+  log "Selected ${#recommended_agents[@]} agents for installation"
 }
 
 # Parse AGENTS_REGISTRY.md to extract agent metadata
@@ -887,7 +1040,16 @@ recommended_agents=("${sorted_agents[@]}")
 
 # Display results using enhanced formatting
 if [[ ${#recommended_agents[@]} -gt 0 ]]; then
-  display_categorized_results
+  # If interactive mode, let user select agents
+  if [[ $INTERACTIVE == true ]]; then
+    display_categorized_results
+    echo ""
+    log "Entering interactive mode..."
+    sleep 1
+    interactive_selection
+  else
+    display_categorized_results
+  fi
 else
   log "No agents met the confidence threshold of ${MIN_CONFIDENCE}%"
 fi
