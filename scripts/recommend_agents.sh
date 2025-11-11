@@ -281,9 +281,13 @@ path:.github/workflows:20
 file:.gitlab-ci.yml:20
 file:Jenkinsfile:20
 path:.circleci:20
+file:circle.yml:15
 file:azure-pipelines.yml:20
 file:.travis.yml:15
+file:buildspec.yml:15
 content:pipeline:10
+content:ci/cd:10
+content:continuous integration:10
 "
 
   AGENT_PATTERNS["kubernetes-specialist"]="
@@ -294,10 +298,15 @@ file:values.yaml:15
 file:kustomization.yaml:20
 content:apiVersion:10
 content:kind: Deployment:15
+content:kind: Service:10
+content:kind: StatefulSet:10
+content:kubectl:10
+file:skaffold.yaml:15
 "
 
   AGENT_PATTERNS["monitoring-specialist"]="
 file:prometheus.yml:20
+file:prometheus.yaml:20
 path:prometheus:15
 path:grafana:15
 file:grafana.ini:15
@@ -305,6 +314,9 @@ file:elasticsearch.yml:15
 file:logstash.conf:15
 file:kibana.yml:15
 content:metrics:10
+content:observability:10
+content:alertmanager:10
+path:monitoring:15
 "
 
   AGENT_PATTERNS["docker-specialist"]="
