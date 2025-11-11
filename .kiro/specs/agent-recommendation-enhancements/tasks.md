@@ -1,13 +1,13 @@
 # Implementation Plan
 
-- [ ] 1. Set up enhanced detection infrastructure
+- [-] 1. Set up enhanced detection infrastructure
   - Create detection pattern data structures for all 30 agents with file, path, and content patterns
   - Implement agent registry parser to extract metadata from AGENTS_REGISTRY.md
   - Add detection pattern configuration with weighted scoring system
   - _Requirements: 1.1, 1.2, 1.3_
 
-- [ ] 2. Implement cloud provider detection
-- [ ] 2.1 Add AWS detection patterns
+- [-] 2. Implement cloud provider detection
+- [-] 2.1 Add AWS detection patterns
   - Implement detection for CloudFormation templates (*.yaml, *.json in cloudformation directories)
   - Add detection for AWS CDK files (cdk.json, cdk.context.json)
   - Implement content search for AWS provider in Terraform files
