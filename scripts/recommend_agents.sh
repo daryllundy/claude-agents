@@ -256,9 +256,12 @@ file:cloudbuild.yaml:15
 file:*.tf:20
 file:*.tfvars:15
 file:terraform.tfstate:25
+file:terraform.tfstate.backup:20
 file:.terraform.lock.hcl:15
 path:.terraform:15
 content:terraform:10
+content:module:10
+content:resource:5
 "
 
   AGENT_PATTERNS["ansible-specialist"]="
@@ -269,6 +272,8 @@ path:roles:15
 path:inventory:10
 file:requirements.yml:10
 content:ansible.builtin:15
+content:hosts::10
+content:tasks::10
 "
 
   AGENT_PATTERNS["cicd-specialist"]="
@@ -611,15 +616,97 @@ log "Scanning project for technology signals..."
 for agent in "${!AGENT_PATTERNS[@]}"; do
   # Calculate confidence (stores in agent_confidence array)
   calculate_confidence "$agent" > /dev/null
-  
+
   # Get the stored confidence
   confidence="${agent_confidence[$agent]:-0}"
-  
+
   # Add agents with confidence >= 25% (suggested threshold)
   if [[ $confidence -ge 25 ]]; then
     add_agent "$agent"
   fi
 done
+
+# DevOps Orchestrator Logic (Task 3.3)
+# Boost devops-orchestrator confidence when multiple infrastructure components detected
+detect_devops_orchestrator() {
+  local infra_agents=()
+  local cloud_detected=false
+  local iac_detected=false
+  local k8s_detected=false
+  local cicd_detected=false
+
+  # Check for cloud providers
+  for cloud_agent in "aws-specialist" "azure-specialist" "gcp-specialist"; do
+    if [[ ${agent_confidence[$cloud_agent]:-0} -ge 25 ]]; then
+      cloud_detected=true
+      infra_agents+=("$cloud_agent")
+    fi
+  done
+
+  # Check for IaC tools
+  for iac_agent in "terraform-specialist" "ansible-specialist"; do
+    if [[ ${agent_confidence[$iac_agent]:-0} -ge 25 ]]; then
+      iac_detected=true
+      infra_agents+=("$iac_agent")
+    fi
+  done
+
+  # Check for Kubernetes
+  if [[ ${agent_confidence["kubernetes-specialist"]:-0} -ge 25 ]]; then
+    k8s_detected=true
+    infra_agents+=("kubernetes-specialist")
+  fi
+
+  # Check for CI/CD
+  if [[ ${agent_confidence["cicd-specialist"]:-0} -ge 25 ]]; then
+    cicd_detected=true
+    infra_agents+=("cicd-specialist")
+  fi
+
+  # Check for monitoring
+  if [[ ${agent_confidence["monitoring-specialist"]:-0} -ge 25 ]]; then
+    infra_agents+=("monitoring-specialist")
+  fi
+
+  # Boost orchestrator confidence based on complexity
+  local current_confidence=${agent_confidence["devops-orchestrator"]:-0}
+  local boost=0
+
+  # Condition 1: Multiple IaC tools (Terraform + Ansible)
+  if [[ $iac_detected == true ]] && [[ ${agent_confidence["terraform-specialist"]:-0} -ge 25 ]] && [[ ${agent_confidence["ansible-specialist"]:-0} -ge 25 ]]; then
+    boost=$((boost + 20))
+  fi
+
+  # Condition 2: Cloud + Terraform + Kubernetes all detected
+  if [[ $cloud_detected == true ]] && [[ $iac_detected == true ]] && [[ $k8s_detected == true ]]; then
+    boost=$((boost + 30))
+  fi
+
+  # Condition 3: IaC + CI/CD + Kubernetes + Monitoring (full DevOps stack)
+  if [[ $iac_detected == true ]] && [[ $cicd_detected == true ]] && [[ $k8s_detected == true ]] && [[ ${agent_confidence["monitoring-specialist"]:-0} -ge 25 ]]; then
+    boost=$((boost + 35))
+  fi
+
+  # Condition 4: 3+ infrastructure agents detected
+  if [[ ${#infra_agents[@]} -ge 3 ]]; then
+    boost=$((boost + 15))
+  fi
+
+  # Apply boost
+  if [[ $boost -gt 0 ]]; then
+    local new_confidence=$((current_confidence + boost))
+    [[ $new_confidence -gt 100 ]] && new_confidence=100
+    agent_confidence["devops-orchestrator"]=$new_confidence
+
+    # Add to recommended agents if not already present and meets threshold
+    if [[ $new_confidence -ge 25 ]]; then
+      add_agent "devops-orchestrator"
+    fi
+  fi
+}
+
+# Run DevOps orchestrator detection logic
+detect_devops_orchestrator
 
 # If no agents detected, recommend core agents
 if [[ ${#recommended_agents[@]} -eq 0 ]]; then
