@@ -42,6 +42,7 @@ Options:
   --verbose              Display detailed detection results with all patterns checked.
   --interactive          Enter interactive mode to manually select agents.
   --export FILE          Export detection profile to JSON file.
+  --import FILE          Import and install agents from a profile JSON file.
   --branch NAME          Override the claude-agents branch to download from.
   --repo URL             Override the base raw URL for the claude-agents repository.
   -h, --help             Show this help message.
@@ -58,6 +59,7 @@ MIN_CONFIDENCE=25  # Default minimum confidence threshold
 VERBOSE=false
 INTERACTIVE=false
 EXPORT_FILE=""
+IMPORT_FILE=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -81,6 +83,12 @@ while [[ $# -gt 0 ]]; do
       shift
       [[ $# -gt 0 ]] || { echo "Missing value for --export" >&2; exit 1; }
       EXPORT_FILE="$1"
+      shift
+      ;;
+    --import)
+      shift
+      [[ $# -gt 0 ]] || { echo "Missing value for --import" >&2; exit 1; }
+      IMPORT_FILE="$1"
       shift
       ;;
     --min-confidence)
@@ -518,6 +526,82 @@ EOF
 EOF
 
   log "Profile exported to $output_file"
+}
+
+# Profile import functionality (Task 9)
+import_profile() {
+  local input_file="$1"
+
+  # Validate file exists
+  if [[ ! -f "$input_file" ]]; then
+    echo "Error: Profile file not found: $input_file" >&2
+    exit 1
+  fi
+
+  log "Importing profile from $input_file"
+
+  # Check if we have jq for JSON parsing, otherwise use grep/sed
+  if ! command -v jq >/dev/null 2>&1; then
+    # Basic JSON parsing without jq
+    log "Warning: jq not found, using basic JSON parsing"
+
+    # Extract selected_agents array (simple parsing)
+    local agents_json=$(grep -A 100 '"selected_agents"' "$input_file" | sed -n '/\[/,/\]/p' | grep '"' | sed 's/.*"\([^"]*\)".*/\1/')
+
+    if [[ -z "$agents_json" ]]; then
+      echo "Error: Could not parse selected_agents from profile" >&2
+      exit 1
+    fi
+
+    # Download each agent
+    local count=0
+    while IFS= read -r agent; do
+      [[ -z "$agent" ]] && continue
+      log "Installing agent: $agent"
+      fetch_agent "$agent"
+      ((count++))
+    done <<< "$agents_json"
+
+    log "Successfully installed $count agents from profile"
+  else
+    # Use jq for proper JSON parsing
+    # Validate JSON
+    if ! jq empty "$input_file" 2>/dev/null; then
+      echo "Error: Invalid JSON in profile file" >&2
+      exit 1
+    fi
+
+    # Extract selected agents
+    local -a agents
+    mapfile -t agents < <(jq -r '.selected_agents[]?' "$input_file")
+
+    if [[ ${#agents[@]} -eq 0 ]]; then
+      echo "Error: No agents found in profile" >&2
+      exit 1
+    fi
+
+    log "Found ${#agents[@]} agents in profile"
+
+    # Fetch agent registry to validate agents exist
+    parse_agent_registry
+
+    # Download agents
+    local count=0
+    for agent in "${agents[@]}"; do
+      [[ -z "$agent" ]] && continue
+
+      # Validate agent exists in registry (if registry was parsed)
+      if [[ ${#AGENT_DESCRIPTIONS[@]} -gt 0 ]] && [[ -z "${AGENT_DESCRIPTIONS[$agent]}" ]]; then
+        log "Warning: Agent '$agent' not found in registry, attempting to download anyway"
+      fi
+
+      log "Installing agent: $agent"
+      fetch_agent "$agent"
+      ((count++))
+    done
+
+    log "Successfully installed $count agents from profile"
+  fi
 }
 
 # Parse AGENTS_REGISTRY.md to extract agent metadata
@@ -1004,6 +1088,46 @@ calculate_confidence() {
 
 # Initialize detection patterns
 initialize_detection_patterns
+
+# Handle import mode - skip detection and install agents from profile (Task 9)
+if [[ -n "$IMPORT_FILE" ]]; then
+  mkdir -p "$AGENTS_DIR"
+
+  # Define fetch_agent function here for import mode
+  fetch_agent() {
+    local agent="$1"
+    local url="${BASE_URL}/${agent}.md"
+    local dest="${AGENTS_DIR}/${agent}.md"
+
+    if [[ -f "$dest" && $FORCE == false ]]; then
+      log "Skipping ${agent} (already exists). Use --force to redownload."
+      return
+    fi
+
+    log "Downloading ${agent} from ${url}"
+    if ! curl -fsSL "$url" -o "$dest"; then
+      echo "Failed to download ${agent} from ${url}" >&2
+      return 1
+    fi
+  }
+
+  # Parse agent registry before importing
+  parse_agent_registry
+
+  # Import and install agents from profile
+  import_profile "$IMPORT_FILE"
+
+  # Always include the registry for reference
+  REGISTRY_DEST="${AGENTS_DIR}/AGENTS_REGISTRY.md"
+  if [[ ! -f "$REGISTRY_DEST" || $FORCE == true ]]; then
+    REGISTRY_URL="${BASE_URL}/AGENTS_REGISTRY.md"
+    log "Downloading agent registry"
+    curl -fsSL "$REGISTRY_URL" -o "$REGISTRY_DEST"
+  fi
+
+  log "All done! Agent prompts are located in ${AGENTS_DIR}"
+  exit 0
+fi
 
 # Parse agent registry for metadata
 parse_agent_registry
