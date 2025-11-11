@@ -355,7 +355,7 @@ display_categorized_results() {
   declare -A category_agents
   for agent in "${recommended_agents[@]}"; do
     local category="${AGENT_CATEGORIES[$agent]:-Uncategorized}"
-    if [[ -z "${category_agents[$category]}" ]]; then
+    if [[ -z "${category_agents[$category]:-}" ]]; then
       category_agents[$category]="$agent"
     else
       category_agents[$category]="${category_agents[$category]} $agent"
@@ -364,7 +364,7 @@ display_categorized_results() {
 
   # Display agents by category
   for category in "${categories[@]}"; do
-    if [[ -n "${category_agents[$category]}" ]]; then
+    if [[ -n "${category_agents[$category]:-}" ]]; then
       # Split agents string into array
       IFS=' ' read -ra agents <<< "${category_agents[$category]}"
 
@@ -380,7 +380,7 @@ display_categorized_results() {
   done
 
   # Display uncategorized agents if any
-  if [[ -n "${category_agents[Uncategorized]}" ]]; then
+  if [[ -n "${category_agents[Uncategorized]:-}" ]]; then
     IFS=' ' read -ra agents <<< "${category_agents[Uncategorized]}"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "Other (${#agents[@]} agent(s))"
@@ -1524,7 +1524,7 @@ if [[ $VERBOSE == true ]]; then
     echo "Agent: $agent (Confidence: ${agent_confidence[$agent]:-0}%)"
     echo "Matched Patterns:"
 
-    local patterns="${AGENT_PATTERNS[$agent]}"
+    patterns="${AGENT_PATTERNS[$agent]}"
     while IFS= read -r pattern_line; do
       [[ -z "$pattern_line" ]] && continue
       pattern_line=$(echo "$pattern_line" | xargs)
@@ -1538,7 +1538,7 @@ if [[ $VERBOSE == true ]]; then
       [[ -z "$type" || -z "$pattern" || -z "$weight" ]] && continue
 
       # Check if pattern matched
-      local matched=false
+      matched=false
       case "$type" in
         file) has_file "$pattern" && matched=true ;;
         path) has_path "$pattern" && matched=true ;;
