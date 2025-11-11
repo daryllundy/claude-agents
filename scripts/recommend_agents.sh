@@ -143,6 +143,96 @@ log() {
   printf '[agent-setup] %s\n' "$*"
 }
 
+# Enhanced error handling (Task 11)
+
+# Network error handling with retry and exponential backoff
+fetch_with_retry() {
+  local url="$1"
+  local output="$2"
+  local max_attempts=3
+  local attempt=1
+  local backoff=2
+
+  while [[ $attempt -le $max_attempts ]]; do
+    # Try to fetch with timeout
+    if curl -fsSL --max-time 30 "$url" -o "$output" 2>/dev/null; then
+      return 0
+    fi
+
+    # Get HTTP status code for better error messages
+    local http_code=$(curl -fsSL -w "%{http_code}" --max-time 30 -o /dev/null "$url" 2>/dev/null || echo "000")
+
+    if [[ $attempt -lt $max_attempts ]]; then
+      log "Attempt $attempt/$max_attempts failed (HTTP $http_code). Retrying in ${backoff}s..."
+      sleep $backoff
+      ((backoff *= 2))  # Exponential backoff
+      ((attempt++))
+    else
+      echo "Error: Failed to download from $url after $max_attempts attempts (HTTP $http_code)" >&2
+
+      # Provide troubleshooting suggestions based on error code
+      case "$http_code" in
+        000)
+          echo "Troubleshooting: Check your internet connection and try again" >&2
+          ;;
+        404)
+          echo "Troubleshooting: The agent file was not found. It may have been removed or renamed" >&2
+          ;;
+        403|401)
+          echo "Troubleshooting: Access denied. Check if the repository is accessible" >&2
+          ;;
+        500|502|503|504)
+          echo "Troubleshooting: Server error. The repository may be temporarily unavailable" >&2
+          ;;
+        *)
+          echo "Troubleshooting: Unexpected error. Please check the repository URL and try again" >&2
+          ;;
+      esac
+
+      return 1
+    fi
+  done
+
+  return 1
+}
+
+# Input validation
+validate_arguments() {
+  # Check for mutually exclusive flags
+  local mode_count=0
+  [[ -n "$IMPORT_FILE" ]] && ((mode_count++))
+  [[ $CHECK_UPDATES == true ]] && ((mode_count++))
+  [[ $UPDATE_ALL == true ]] && ((mode_count++))
+
+  if [[ $mode_count -gt 1 ]]; then
+    echo "Error: --import, --check-updates, and --update-all are mutually exclusive" >&2
+    echo "Use only one of these flags at a time" >&2
+    exit 1
+  fi
+
+  # Validate min-confidence already done in argument parsing
+
+  # Validate export file path
+  if [[ -n "$EXPORT_FILE" ]]; then
+    local export_dir=$(dirname "$EXPORT_FILE")
+    if [[ ! -d "$export_dir" ]] && [[ "$export_dir" != "." ]]; then
+      echo "Error: Export directory does not exist: $export_dir" >&2
+      echo "Please create the directory first or specify a valid path" >&2
+      exit 1
+    fi
+  fi
+
+  # Validate import file existence
+  if [[ -n "$IMPORT_FILE" ]] && [[ ! -f "$IMPORT_FILE" ]]; then
+    echo "Error: Import file not found: $IMPORT_FILE" >&2
+    echo "Please check the file path and try again" >&2
+    exit 1
+  fi
+}
+
+# Call validation after argument parsing
+validate_arguments
+
 has_file() {
   local pattern="$1"
   find . -path './.git' -prune -o -name "$pattern" -print -quit | grep -q .
@@ -1495,11 +1585,14 @@ fetch_agent() {
     return
   fi
 
-  log "Downloading ${agent} from ${url}"
-  if ! curl -fsSL "$url" -o "$dest"; then
-    echo "Failed to download ${agent} from ${url}" >&2
+  log "Downloading ${agent}..."
+  if ! fetch_with_retry "$url" "$dest"; then
+    echo "Failed to download ${agent}" >&2
+    echo "You can try again with --force to retry failed downloads" >&2
     return 1
   fi
+
+  log "Successfully downloaded ${agent}"
 }
 
 for agent in "${recommended_agents[@]}"; do
@@ -1510,8 +1603,12 @@ done
 REGISTRY_DEST="${AGENTS_DIR}/AGENTS_REGISTRY.md"
 if [[ ! -f "$REGISTRY_DEST" || $FORCE == true ]]; then
   REGISTRY_URL="${BASE_URL}/AGENTS_REGISTRY.md"
-  log "Downloading agent registry"
-  curl -fsSL "$REGISTRY_URL" -o "$REGISTRY_DEST"
+  log "Downloading agent registry..."
+  if ! fetch_with_retry "$REGISTRY_URL" "$REGISTRY_DEST"; then
+    echo "Warning: Failed to download agent registry" >&2
+  else
+    log "Successfully downloaded agent registry"
+  fi
 else
   log "Agent registry already present. Use --force to redownload."
 fi
