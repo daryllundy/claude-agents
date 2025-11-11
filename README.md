@@ -18,6 +18,7 @@ The newest and most powerful feature of this collection is the **intelligent orc
 
 - **24 Specialized Agents** organized into 8 categories (including orchestration)
 - **7 Claude Code Skills** for specialized marketing, e-commerce, and orchestration
+- **MCP Code Execution Support** - Enhanced agents leverage Model Context Protocol for efficient data processing
 - **Intelligent Orchestration** - Coordinate multi-specialist workflows automatically
 - **Ready for Claude Code Pro** - Use as sub-agents via the Task tool or auto-discovered skills
 - **Deep Domain Expertise** - Each agent/skill specializes in a specific area
@@ -205,6 +206,47 @@ These agents are specialized prompts designed for Claude Code Pro's Task tool. W
 4. **Results return** to your main conversation
 5. **You review and proceed** with the next step
 
+## MCP Code Execution
+
+Several agents now include **Model Context Protocol (MCP) Code Execution** capabilities for enhanced data processing and tool integration:
+
+### Enhanced Agents
+- **data-science-specialist** - Process large datasets efficiently, train models locally
+- **database-specialist** - Execute complex queries and transformations
+- **debugging-specialist** - Run diagnostic code and analyze execution traces
+- **devops-specialist** - Automate infrastructure operations with code
+- **observability-specialist** - Process metrics and logs programmatically
+- **performance-specialist** - Run benchmarks and analyze performance data
+- **security-specialist** - Execute security scans and vulnerability assessments
+
+### Key Benefits
+- **Context-Efficient**: Process large datasets (10,000 rows → 5 relevant rows) before results reach the model
+- **Better Control Flow**: Use loops, conditionals, and error handling for complex pipelines
+- **Privacy Protection**: Intermediate results and sensitive data stay in the execution environment
+- **Reusable Skills**: Save common functions to `./skills/` directory for future use
+
+### When to Use
+- Processing large datasets (>100 rows)
+- Multi-step data transformations
+- Iterative operations (model training, testing)
+- Combining data from multiple MCP sources
+- Complex analysis requiring multiple operations
+
+### Example
+```python
+# Instead of making multiple tool calls, write code:
+import database_mcp
+import pandas as pd
+
+# Fetch and process data locally
+data = await database_mcp.query({"sql": "SELECT * FROM users"})
+df = pd.DataFrame(data)
+filtered = df[df['active'] == True].groupby('region').size()
+
+# Only summary enters model context
+print(f"Active users by region: {filtered.to_dict()}")
+```
+
 ## Project Structure
 
 ```
@@ -256,7 +298,8 @@ For detailed information about each agent, see:
 ## Requirements
 
 - **Claude Code Pro subscription** (required)
-- No additional dependencies or API keys needed
+- **MCP Server Support** (optional) - For enhanced code execution capabilities with compatible agents
+- No additional dependencies or API keys needed for basic functionality
 
 ## Real-World Examples
 
