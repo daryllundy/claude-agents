@@ -1,6 +1,6 @@
 # Getting Started with Claude Code Agents
 
-Welcome! This repository contains 24 specialized AI agents designed for **Claude Code Pro** users.
+Welcome! This repository contains 31 specialized AI agents designed for **Claude Code Pro** users.
 
 ## What Changed?
 
@@ -32,9 +32,17 @@ That's it! No setup, no configuration, no API keys.
 
 ## Available Agents
 
-### 🏗️ Infrastructure (3 agents)
+### 🏗️ Infrastructure (11 agents)
+- `devops-orchestrator` - Coordinates DevOps specialists for complex infrastructure projects
+- `aws-specialist` - AWS services, CloudFormation, Well-Architected Framework
+- `azure-specialist` - Azure services, ARM templates, Bicep
+- `gcp-specialist` - GCP services, Deployment Manager, gcloud
+- `terraform-specialist` - Terraform configuration, modules, state management
+- `ansible-specialist` - Ansible playbooks, roles, configuration management
+- `cicd-specialist` - GitHub Actions, GitLab CI, Jenkins, pipeline automation
+- `kubernetes-specialist` - Kubernetes, Helm, service mesh, auto-scaling
+- `monitoring-specialist` - Prometheus, Grafana, ELK, distributed tracing
 - `docker-specialist` - Dockerfile, containers, docker-compose
-- `devops-specialist` - CI/CD, GitHub Actions, automation
 - `observability-specialist` - Monitoring, logging, Prometheus, Grafana
 
 ### 💻 Development (3 agents)
@@ -67,6 +75,84 @@ That's it! No setup, no configuration, no API keys.
 
 ### 🔬 Specialized (1 agent)
 - `data-science-specialist` - ML pipelines, data analysis
+
+## DevOps Orchestration
+
+The DevOps Orchestrator coordinates multiple specialized agents for complex infrastructure projects. Use it when you need to work across multiple DevOps domains.
+
+### When to Use the Orchestrator
+
+**Use `devops-orchestrator` when:**
+- Setting up complete infrastructure from scratch
+- Coordinating multiple cloud providers or tools
+- Planning multi-phase infrastructure projects
+- Need guidance on which specialists to use
+- Working on complex migrations or deployments
+
+**Use specialists directly when:**
+- Working within a single domain (e.g., only AWS)
+- Making targeted changes to existing infrastructure
+- You know exactly which specialist you need
+- Task is straightforward and well-defined
+
+### Simple Orchestrator Example
+
+```
+"Use devops-orchestrator to help me set up a production-ready Kubernetes cluster on AWS with monitoring and CI/CD"
+```
+
+The orchestrator will:
+1. Analyze your requirements
+2. Identify needed specialists (aws-specialist, kubernetes-specialist, cicd-specialist, monitoring-specialist)
+3. Coordinate their work in the right sequence
+4. Ensure integration between components
+
+### Sequential Specialist Invocation
+
+For more control, invoke specialists sequentially:
+
+```
+Step 1: "Use aws-specialist to design VPC and EKS cluster architecture"
+[Review output]
+
+Step 2: "Use terraform-specialist to create IaC for the AWS infrastructure we just designed"
+[Review output]
+
+Step 3: "Use kubernetes-specialist to create Helm charts for our application deployment"
+[Review output]
+
+Step 4: "Use cicd-specialist to create GitHub Actions pipeline for deploying to EKS"
+[Review output]
+
+Step 5: "Use monitoring-specialist to set up Prometheus and Grafana for cluster monitoring"
+[Review output]
+```
+
+### Common Orchestration Patterns
+
+#### Full Infrastructure Setup
+```
+"Use devops-orchestrator to coordinate:
+1. AWS infrastructure provisioning
+2. Terraform configuration for IaC
+3. Kubernetes cluster setup
+4. CI/CD pipeline creation
+5. Monitoring and alerting"
+```
+
+#### Multi-Cloud Deployment
+```
+"Use devops-orchestrator to help deploy our application to both AWS and Azure with unified monitoring"
+```
+
+#### Migration Project
+```
+"Use devops-orchestrator to plan our migration from on-premise to GCP, including:
+- Infrastructure design
+- CI/CD pipeline migration
+- Monitoring setup
+- Deployment strategy"
+```
 
 ## Example Usage
 
@@ -135,6 +221,26 @@ Always review agent work before proceeding.
 4. test-specialist → Add tests
 5. security-specialist → Security review
 6. documentation-specialist → Document it
+```
+
+### Infrastructure Setup (DevOps Orchestration)
+```
+1. devops-orchestrator → Analyze requirements and plan approach
+2. aws-specialist → Design AWS architecture (VPC, EKS, RDS)
+3. terraform-specialist → Create IaC for AWS resources
+4. kubernetes-specialist → Configure K8s manifests and Helm charts
+5. cicd-specialist → Build deployment pipeline
+6. monitoring-specialist → Set up observability stack
+```
+
+### Cloud Migration
+```
+1. devops-orchestrator → Plan migration strategy
+2. terraform-specialist → Create multi-cloud IaC
+3. [cloud-specialist] → Configure target cloud (AWS/Azure/GCP)
+4. ansible-specialist → Create configuration automation
+5. cicd-specialist → Migrate CI/CD pipelines
+6. monitoring-specialist → Unified monitoring across clouds
 ```
 
 ### Security Hardening

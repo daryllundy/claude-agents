@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "Auto-commit on Task Completion",
+  "description": "Automatically commits changes to the current branch after finishing a major task",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "**/*"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A major task has been completed. Review the changes made in this session and create a meaningful commit message that describes what was accomplished. Then commit these changes to the current git branch using appropriate git commands. Make sure to:\n1. Check git status to see what files have changed\n2. Stage all relevant changes (git add)\n3. Create a descriptive commit message that summarizes the task completed\n4. Commit the changes (git commit)\nDo not push the changes automatically - only commit to the local branch."
+  }
+}

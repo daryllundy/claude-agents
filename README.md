@@ -1,6 +1,6 @@
 # Claude Code Agents
 
-A comprehensive collection of specialized AI agents and skills designed for **Claude Code Pro** users. These agents and skills work as intelligent sub-agents that can be invoked within Claude Code to handle specific development, marketing, and e-commerce tasks with deep domain expertise.
+A comprehensive collection of **31 specialized AI agents** and **7 skills** designed for **Claude Code Pro** users. These agents and skills work as intelligent sub-agents that can be invoked within Claude Code to handle specific development, infrastructure, marketing, and e-commerce tasks with deep domain expertise.
 
 ## What's New: E-Commerce Orchestration System
 
@@ -14,10 +14,32 @@ The newest and most powerful feature of this collection is the **intelligent orc
 
 **Example**: "Analyze https://mystore.com" → Orchestrator identifies issues → Routes to web-design-specialist, shopify-specialist, instagram-specialist, and zapier-specialist in the optimal sequence → Tracks results and ROI.
 
+## DevOps Orchestration System
+
+The **DevOps Orchestrator** provides intelligent coordination of infrastructure specialists for complex cloud and platform projects:
+
+- **DevOps Orchestrator Agent**: Analyzes infrastructure requirements and coordinates 8 specialized DevOps sub-agents
+- **Cloud Provider Specialists**: Deep expertise in AWS, Azure, and GCP with platform-specific best practices
+- **Infrastructure as Code Specialists**: Terraform and Ansible experts for provisioning and configuration management
+- **Platform Specialists**: CI/CD, Kubernetes, and monitoring experts for complete infrastructure automation
+- **Pre-defined Workflows**: Common patterns for full infrastructure setup, deployment pipelines, multi-cloud migrations, and Kubernetes deployments
+
+**How It Works**: The orchestrator analyzes your infrastructure needs, identifies required specialists (cloud provider, IaC, CI/CD, monitoring), coordinates their work in the optimal sequence, maintains context across specialists, and synthesizes results into cohesive solutions.
+
+**Example Workflows**:
+- **Full Infrastructure Setup**: AWS Specialist → Terraform Specialist → Kubernetes Specialist → CI/CD Specialist → Monitoring Specialist
+- **Multi-Cloud Migration**: Terraform Specialist → Multiple Cloud Specialists → CI/CD Specialist → Monitoring Specialist
+- **Kubernetes Deployment Pipeline**: Kubernetes Specialist → CI/CD Specialist → Monitoring Specialist
+
+**When to Use**:
+- Use the **devops-orchestrator** for complex multi-phase infrastructure projects requiring coordination across multiple domains
+- Use **individual specialists** directly for focused tasks (e.g., "Use aws-specialist to design a VPC architecture")
+
 ## Features
 
-- **24 Specialized Agents** organized into 8 categories (including orchestration)
+- **31 Specialized Agents** organized into 9 categories (including orchestration)
 - **7 Claude Code Skills** for specialized marketing, e-commerce, and orchestration
+- **DevOps Orchestration System** - Intelligent coordination of cloud, IaC, CI/CD, and monitoring specialists
 - **MCP Code Execution Support** - Enhanced agents leverage Model Context Protocol for efficient data processing
 - **Intelligent Orchestration** - Coordinate multi-specialist workflows automatically
 - **Ready for Claude Code Pro** - Use as sub-agents via the Task tool or auto-discovered skills
@@ -32,9 +54,28 @@ The newest and most powerful feature of this collection is the **intelligent orc
 **NEW!** Intelligent workflow coordination for e-commerce transformation:
 - **e-commerce-coordinator** - Orchestrates multi-specialist e-commerce projects, tracks progress across 8-week transformation roadmaps, synthesizes results from design, platform, marketing, and automation specialists
 
-### Infrastructure (3 agents)
+### Infrastructure (11 agents)
+**NEW!** Comprehensive DevOps orchestration system with specialized cloud and platform experts:
+
+**Orchestration:**
+- **devops-orchestrator** ⭐ (formerly devops-specialist) - Coordinates DevOps specialists for complex infrastructure projects, manages multi-cloud deployments, and orchestrates full-stack infrastructure workflows
+
+> **Note**: The `devops-specialist` has been transformed into `devops-orchestrator` to better reflect its role as a coordinator of specialized DevOps sub-agents. For focused infrastructure tasks, use the specific cloud or platform specialists directly.
+
+**Cloud Providers:**
+- **aws-specialist** - AWS services, CloudFormation, Well-Architected Framework, IAM, and cost optimization
+- **azure-specialist** - Azure services, ARM templates, Bicep, Azure AD, and hybrid cloud scenarios
+- **gcp-specialist** - Google Cloud services, Deployment Manager, GCP IAM, and multi-region deployments
+
+**Infrastructure as Code:**
+- **terraform-specialist** - Terraform configuration, modules, state management, and multi-cloud provisioning
+- **ansible-specialist** - Ansible playbooks, roles, inventory management, and configuration automation
+
+**Platform & Operations:**
+- **cicd-specialist** - CI/CD pipelines (GitHub Actions, GitLab CI, Jenkins, CircleCI, Azure DevOps)
+- **kubernetes-specialist** - Kubernetes deployments, Helm charts, service mesh, and auto-scaling
+- **monitoring-specialist** - Prometheus, Grafana, ELK stack, distributed tracing, and alerting strategies
 - **docker-specialist** - Container configuration and optimization
-- **devops-specialist** - CI/CD, automation, and infrastructure as code
 - **observability-specialist** - Monitoring, logging, and alerting
 
 ### Development (3 agents)
@@ -327,7 +368,33 @@ Step 5: "Use documentation-specialist to generate API documentation"
 "Use docker-specialist to create an optimized multi-stage Dockerfile for this Node.js application"
 ```
 
-### Example 5: E-Commerce Transformation
+### Example 5: DevOps Infrastructure Setup
+```
+# Orchestrated multi-specialist DevOps workflow
+Step 1: "Use devops-orchestrator to set up a production infrastructure on AWS"
+        → Orchestrator analyzes requirements and coordinates specialists
+
+Step 2: Orchestrator invokes aws-specialist
+        → "Setting up VPC, EC2 instances, RDS, and S3 buckets"
+
+Step 3: Orchestrator invokes terraform-specialist
+        → "Codifying infrastructure for repeatability and version control"
+
+Step 4: Orchestrator invokes kubernetes-specialist
+        → "Deploying application to EKS cluster with auto-scaling"
+
+Step 5: Orchestrator invokes cicd-specialist
+        → "Creating GitHub Actions pipeline for automated deployments"
+
+Step 6: Orchestrator invokes monitoring-specialist
+        → "Setting up Prometheus, Grafana, and alerting"
+
+Alternative: Direct specialist invocation for focused tasks
+"Use aws-specialist to design a highly available architecture for my web application"
+"Use terraform-specialist to create reusable modules for our multi-cloud infrastructure"
+```
+
+### Example 6: E-Commerce Transformation
 ```
 # Orchestrated multi-specialist workflow
 Step 1: "Analyze https://mystore.com"  # e-commerce-orchestrator skill auto-activates

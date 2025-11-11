@@ -1,6 +1,6 @@
 # Using Claude Code Agents with Claude Code Pro
 
-This guide shows you how to use the 24 specialized agents as sub-agents within Claude Code Pro.
+This guide shows you how to use the 31 specialized agents as sub-agents within Claude Code Pro.
 
 ## Overview
 
@@ -199,6 +199,355 @@ For complex tasks requiring multiple agents:
 "Use data-science-specialist to create a customer churn prediction model"
 ```
 **Use for**: ML pipelines, data analysis, model training
+
+### Orchestration Agents
+
+#### devops-orchestrator
+```
+"Use devops-orchestrator to coordinate a full infrastructure setup with AWS, Terraform, and monitoring"
+```
+**Use for**: Multi-specialist DevOps workflows, infrastructure planning, deployment coordination
+
+#### e-commerce-coordinator
+```
+"Use e-commerce-coordinator to audit and transform my Shopify store"
+```
+**Use for**: E-commerce projects, multi-specialist coordination, business transformation
+
+## DevOps Orchestration Workflows
+
+The DevOps Orchestrator coordinates multiple specialized agents to handle complex infrastructure and deployment scenarios. It intelligently delegates tasks to cloud provider specialists (AWS, Azure, GCP), infrastructure as code specialists (Terraform, Ansible), platform specialists (CI/CD, Kubernetes, Monitoring), and integrates with existing agents (Docker, Security, Observability).
+
+### When to Use the Orchestrator vs Direct Specialist Invocation
+
+**Use the DevOps Orchestrator when:**
+- You need multiple DevOps specialists working together
+- You're setting up complete infrastructure from scratch
+- You need guidance on which specialists to use and in what order
+- You want pre-defined workflow patterns for common scenarios
+- You need context maintained across multiple specialist invocations
+
+**Use Direct Specialist Invocation when:**
+- You know exactly which specialist you need
+- You're making a focused change to one area
+- You're working within a single domain (e.g., only AWS, only Kubernetes)
+- You want maximum control over the sequence of operations
+
+### Specialist Coordination Patterns
+
+The orchestrator uses several patterns to coordinate specialists:
+
+**Sequential Pattern**: Tasks with dependencies execute in order
+```
+Cloud Specialist → IaC Specialist → Monitoring Specialist
+```
+
+**Parallel Pattern**: Independent tasks execute simultaneously
+```
+AWS Specialist + Azure Specialist (for multi-cloud)
+```
+
+**Iterative Pattern**: Refinement across multiple specialists
+```
+Terraform Specialist → Review → Terraform Specialist (refinement)
+```
+
+**Integration Pattern**: Combining outputs from multiple specialists
+```
+Kubernetes Specialist + CI/CD Specialist → Unified deployment pipeline
+```
+
+### Example 1: Full Infrastructure Setup
+
+**Scenario**: Setting up complete AWS infrastructure with IaC and monitoring
+
+```
+"Use devops-orchestrator to set up a production-ready AWS infrastructure for a Node.js application with:
+- VPC, subnets, and security groups
+- ECS cluster for container orchestration
+- RDS PostgreSQL database
+- S3 for static assets
+- CloudWatch monitoring
+- Everything codified in Terraform
+- CI/CD pipeline for deployments"
+
+The orchestrator will coordinate:
+
+Week 1: AWS Specialist
+- Design VPC architecture with public/private subnets
+- Configure security groups and IAM roles
+- Set up ECS cluster and RDS instance
+- Configure S3 buckets with proper policies
+
+Week 2: Terraform Specialist
+- Convert AWS infrastructure to Terraform modules
+- Set up remote state in S3 with DynamoDB locking
+- Create reusable modules for VPC, ECS, RDS
+- Implement proper variable management
+
+Week 3: Monitoring Specialist
+- Configure CloudWatch dashboards
+- Set up log aggregation from ECS tasks
+- Create alerting rules for critical metrics
+- Implement distributed tracing
+
+Week 4: CI/CD Specialist
+- Create GitHub Actions pipeline
+- Implement build and test stages
+- Add Docker image building and pushing to ECR
+- Configure automated ECS deployments
+- Add security scanning and compliance checks
+```
+
+### Example 2: Kubernetes Deployment Pipeline
+
+**Scenario**: Setting up a complete Kubernetes deployment pipeline with monitoring
+
+```
+"Use devops-orchestrator to create a Kubernetes deployment pipeline for my microservices application with:
+- GKE cluster setup
+- Helm charts for all services
+- CI/CD pipeline with automated deployments
+- Prometheus and Grafana monitoring
+- Auto-scaling configuration"
+
+The orchestrator will coordinate:
+
+Phase 1: Kubernetes Specialist
+- Design GKE cluster architecture
+- Create namespace structure
+- Configure RBAC and service accounts
+- Set up Ingress with TLS
+- Create Helm charts for each microservice
+- Configure ConfigMaps and Secrets management
+- Set up HPA (Horizontal Pod Autoscaler)
+
+Phase 2: CI/CD Specialist
+- Create GitLab CI pipeline
+- Implement build stage with Docker image creation
+- Add automated testing (unit, integration)
+- Configure Helm deployment to GKE
+- Implement blue-green deployment strategy
+- Add rollback capabilities
+- Configure environment-specific deployments (dev, staging, prod)
+
+Phase 3: Monitoring Specialist
+- Deploy Prometheus operator to cluster
+- Configure ServiceMonitors for all microservices
+- Create Grafana dashboards for:
+  - Cluster health and resource usage
+  - Application metrics and SLIs
+  - Request rates and error rates
+- Set up alerting rules for:
+  - Pod failures and restarts
+  - High resource usage
+  - Application errors
+- Configure distributed tracing with Jaeger
+
+Phase 4: Integration (Orchestrator)
+- Verify end-to-end deployment flow
+- Test monitoring and alerting
+- Document deployment procedures
+- Create runbooks for common operations
+```
+
+### Example 3: Multi-Cloud Migration
+
+**Scenario**: Migrating infrastructure from AWS to a multi-cloud setup (AWS + Azure)
+
+```
+"Use devops-orchestrator to migrate our application to a multi-cloud architecture:
+- Keep primary infrastructure on AWS
+- Add Azure as secondary region for disaster recovery
+- Use Terraform for all infrastructure
+- Maintain unified monitoring across both clouds
+- Set up cross-cloud networking"
+
+The orchestrator will coordinate:
+
+Phase 1: Terraform Specialist
+- Audit existing AWS infrastructure
+- Design multi-cloud Terraform structure
+- Create provider configurations for AWS and Azure
+- Set up Terraform workspaces for each cloud
+- Design module structure for reusability
+- Plan state management strategy
+
+Phase 2: AWS Specialist
+- Review and optimize existing AWS infrastructure
+- Prepare for Terraform import
+- Design cross-region connectivity
+- Configure AWS Transit Gateway
+- Set up VPC peering for multi-region
+
+Phase 3: Azure Specialist
+- Design equivalent Azure architecture
+- Create Azure Virtual Network
+- Set up Azure VPN Gateway for AWS connectivity
+- Configure Azure resources (VMs, App Service, SQL Database)
+- Implement Azure-specific security (Azure AD, Key Vault)
+
+Phase 4: Terraform Specialist (Implementation)
+- Import existing AWS resources to Terraform
+- Create Terraform modules for AWS infrastructure
+- Implement Azure infrastructure in Terraform
+- Set up cross-cloud networking in code
+- Configure remote state with locking
+- Implement CI/CD for infrastructure changes
+
+Phase 5: Monitoring Specialist
+- Deploy unified monitoring solution
+- Configure Prometheus federation across clouds
+- Set up centralized Grafana instance
+- Create cross-cloud dashboards
+- Implement alerting for both environments
+- Configure log aggregation from both clouds
+
+Phase 6: CI/CD Specialist
+- Update deployment pipelines for multi-cloud
+- Implement traffic routing logic
+- Configure health checks and failover
+- Add deployment verification tests
+- Create disaster recovery automation
+```
+
+### Example 4: Container Migration to Kubernetes
+
+**Scenario**: Migrating Docker Compose application to Kubernetes
+
+```
+"Use devops-orchestrator to migrate our Docker Compose application to Kubernetes on AWS EKS with proper CI/CD"
+
+The orchestrator will coordinate:
+
+Phase 1: Docker Specialist + Kubernetes Specialist
+- Docker Specialist: Review and optimize existing Dockerfiles
+- Docker Specialist: Implement multi-stage builds
+- Kubernetes Specialist: Convert docker-compose.yml to K8s manifests
+- Kubernetes Specialist: Create Helm chart structure
+
+Phase 2: AWS Specialist + Kubernetes Specialist
+- AWS Specialist: Provision EKS cluster with Terraform
+- AWS Specialist: Set up ECR for container registry
+- AWS Specialist: Configure VPC and security groups
+- Kubernetes Specialist: Configure cluster networking and storage
+
+Phase 3: CI/CD Specialist
+- Create GitHub Actions workflow
+- Implement Docker build and push to ECR
+- Add Helm deployment to EKS
+- Configure automated testing
+- Implement deployment strategies
+
+Phase 4: Monitoring Specialist
+- Deploy monitoring stack to cluster
+- Configure application metrics collection
+- Set up log aggregation
+- Create dashboards and alerts
+```
+
+### Example 5: Infrastructure as Code Adoption
+
+**Scenario**: Converting manually created infrastructure to Terraform
+
+```
+"Use devops-orchestrator to convert our manually created AWS infrastructure to Terraform"
+
+The orchestrator will coordinate:
+
+Phase 1: AWS Specialist
+- Audit existing AWS resources
+- Document current architecture
+- Identify dependencies between resources
+- Create architecture diagrams
+
+Phase 2: Terraform Specialist
+- Design Terraform module structure
+- Set up remote state backend
+- Create import plan for existing resources
+- Import resources into Terraform state
+- Generate Terraform configurations
+- Refactor into reusable modules
+
+Phase 3: CI/CD Specialist
+- Create Terraform CI/CD pipeline
+- Implement terraform plan on pull requests
+- Configure terraform apply on merge
+- Add state locking and backup
+- Implement drift detection
+
+Phase 4: Monitoring Specialist
+- Add infrastructure monitoring
+- Track Terraform state changes
+- Alert on configuration drift
+```
+
+### Orchestrator Decision Framework
+
+The DevOps Orchestrator uses this framework to select specialists:
+
+**Cloud Provider Selection:**
+- AWS mentioned → aws-specialist
+- Azure mentioned → azure-specialist
+- GCP/Google Cloud mentioned → gcp-specialist
+- Multi-cloud → Multiple cloud specialists
+
+**Infrastructure as Code:**
+- Terraform mentioned → terraform-specialist
+- Ansible/Configuration management → ansible-specialist
+- CloudFormation → aws-specialist
+- ARM templates/Bicep → azure-specialist
+
+**Container & Orchestration:**
+- Docker/Dockerfile → docker-specialist
+- Kubernetes/K8s/Helm → kubernetes-specialist
+- ECS/EKS → aws-specialist + kubernetes-specialist
+
+**CI/CD & Automation:**
+- Pipeline/CI/CD → cicd-specialist
+- GitHub Actions/GitLab CI/Jenkins → cicd-specialist
+
+**Observability:**
+- Monitoring/Metrics/Logs → monitoring-specialist
+- Prometheus/Grafana → monitoring-specialist
+- Distributed tracing → monitoring-specialist
+
+**Cross-Cutting Concerns:**
+- Security → security-specialist
+- Performance → performance-specialist
+- Documentation → documentation-specialist
+
+### Tips for Working with the Orchestrator
+
+1. **Be Clear About Your Goal**: Describe the end state you want, not just the first step
+2. **Mention All Technologies**: List all cloud providers, tools, and platforms involved
+3. **Specify Constraints**: Budget, timeline, compliance requirements, existing infrastructure
+4. **Ask for Workflow Planning**: Request a phased approach for complex projects
+5. **Review Each Phase**: Approve each phase before moving to the next
+6. **Iterate as Needed**: The orchestrator can adjust the plan based on your feedback
+
+### Example Orchestrator Invocations
+
+**Simple Coordination:**
+```
+"Use devops-orchestrator to set up AWS infrastructure with Terraform and monitoring"
+```
+
+**Complex Multi-Phase:**
+```
+"Use devops-orchestrator to plan and execute a migration from Heroku to AWS EKS with:
+- Containerized microservices
+- PostgreSQL on RDS
+- Redis on ElastiCache
+- CI/CD with GitHub Actions
+- Full observability stack
+- Zero-downtime migration"
+```
+
+**Workflow Planning:**
+```
+"Use devops-orchestrator to create a 4-week plan for implementing infrastructure as code for our existing Azure resources"
+```
 
 ## Real-World Examples
 
