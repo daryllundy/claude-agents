@@ -36,11 +36,12 @@ Usage:
   recommend_agents.sh [options]
 
 Options:
-  --dry-run      Only print recommended agents without downloading.
-  --force        Redownload agent files even if they already exist locally.
-  --branch NAME  Override the claude-agents branch to download from.
-  --repo URL     Override the base raw URL for the claude-agents repository.
-  -h, --help     Show this help message.
+  --dry-run              Only print recommended agents without downloading.
+  --force                Redownload agent files even if they already exist locally.
+  --min-confidence NUM   Only recommend agents with confidence >= NUM (0-100).
+  --branch NAME          Override the claude-agents branch to download from.
+  --repo URL             Override the base raw URL for the claude-agents repository.
+  -h, --help             Show this help message.
 
 Environment variables:
   CLAUDE_AGENTS_BRANCH  Override the branch (default: main).
@@ -50,6 +51,7 @@ USAGE
 }
 
 FORCE=false
+MIN_CONFIDENCE=25  # Default minimum confidence threshold
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -59,6 +61,16 @@ while [[ $# -gt 0 ]]; do
       ;;
     --force)
       FORCE=true
+      shift
+      ;;
+    --min-confidence)
+      shift
+      [[ $# -gt 0 ]] || { echo "Missing value for --min-confidence" >&2; exit 1; }
+      if ! [[ "$1" =~ ^[0-9]+$ ]] || [[ "$1" -lt 0 ]] || [[ "$1" -gt 100 ]]; then
+        echo "Error: --min-confidence must be a number between 0 and 100" >&2
+        exit 1
+      fi
+      MIN_CONFIDENCE="$1"
       shift
       ;;
     --branch)
@@ -632,8 +644,8 @@ for agent in "${!AGENT_PATTERNS[@]}"; do
   # Get the stored confidence
   confidence="${agent_confidence[$agent]:-0}"
 
-  # Add agents with confidence >= 25% (suggested threshold)
-  if [[ $confidence -ge 25 ]]; then
+  # Add agents with confidence >= MIN_CONFIDENCE threshold
+  if [[ $confidence -ge $MIN_CONFIDENCE ]]; then
     add_agent "$agent"
   fi
 done
@@ -649,7 +661,7 @@ detect_devops_orchestrator() {
 
   # Check for cloud providers
   for cloud_agent in "aws-specialist" "azure-specialist" "gcp-specialist"; do
-    if [[ ${agent_confidence[$cloud_agent]:-0} -ge 25 ]]; then
+    if [[ ${agent_confidence[$cloud_agent]:-0} -ge $MIN_CONFIDENCE ]]; then
       cloud_detected=true
       infra_agents+=("$cloud_agent")
     fi
@@ -657,26 +669,26 @@ detect_devops_orchestrator() {
 
   # Check for IaC tools
   for iac_agent in "terraform-specialist" "ansible-specialist"; do
-    if [[ ${agent_confidence[$iac_agent]:-0} -ge 25 ]]; then
+    if [[ ${agent_confidence[$iac_agent]:-0} -ge $MIN_CONFIDENCE ]]; then
       iac_detected=true
       infra_agents+=("$iac_agent")
     fi
   done
 
   # Check for Kubernetes
-  if [[ ${agent_confidence["kubernetes-specialist"]:-0} -ge 25 ]]; then
+  if [[ ${agent_confidence["kubernetes-specialist"]:-0} -ge $MIN_CONFIDENCE ]]; then
     k8s_detected=true
     infra_agents+=("kubernetes-specialist")
   fi
 
   # Check for CI/CD
-  if [[ ${agent_confidence["cicd-specialist"]:-0} -ge 25 ]]; then
+  if [[ ${agent_confidence["cicd-specialist"]:-0} -ge $MIN_CONFIDENCE ]]; then
     cicd_detected=true
     infra_agents+=("cicd-specialist")
   fi
 
   # Check for monitoring
-  if [[ ${agent_confidence["monitoring-specialist"]:-0} -ge 25 ]]; then
+  if [[ ${agent_confidence["monitoring-specialist"]:-0} -ge $MIN_CONFIDENCE ]]; then
     infra_agents+=("monitoring-specialist")
   fi
 
@@ -685,7 +697,7 @@ detect_devops_orchestrator() {
   local boost=0
 
   # Condition 1: Multiple IaC tools (Terraform + Ansible)
-  if [[ $iac_detected == true ]] && [[ ${agent_confidence["terraform-specialist"]:-0} -ge 25 ]] && [[ ${agent_confidence["ansible-specialist"]:-0} -ge 25 ]]; then
+  if [[ $iac_detected == true ]] && [[ ${agent_confidence["terraform-specialist"]:-0} -ge $MIN_CONFIDENCE ]] && [[ ${agent_confidence["ansible-specialist"]:-0} -ge $MIN_CONFIDENCE ]]; then
     boost=$((boost + 20))
   fi
 
@@ -695,7 +707,7 @@ detect_devops_orchestrator() {
   fi
 
   # Condition 3: IaC + CI/CD + Kubernetes + Monitoring (full DevOps stack)
-  if [[ $iac_detected == true ]] && [[ $cicd_detected == true ]] && [[ $k8s_detected == true ]] && [[ ${agent_confidence["monitoring-specialist"]:-0} -ge 25 ]]; then
+  if [[ $iac_detected == true ]] && [[ $cicd_detected == true ]] && [[ $k8s_detected == true ]] && [[ ${agent_confidence["monitoring-specialist"]:-0} -ge $MIN_CONFIDENCE ]]; then
     boost=$((boost + 35))
   fi
 
@@ -711,7 +723,7 @@ detect_devops_orchestrator() {
     agent_confidence["devops-orchestrator"]=$new_confidence
 
     # Add to recommended agents if not already present and meets threshold
-    if [[ $new_confidence -ge 25 ]]; then
+    if [[ $new_confidence -ge $MIN_CONFIDENCE ]]; then
       add_agent "devops-orchestrator"
     fi
   fi
