@@ -41,6 +41,7 @@ Options:
   --min-confidence NUM   Only recommend agents with confidence >= NUM (0-100).
   --verbose              Display detailed detection results with all patterns checked.
   --interactive          Enter interactive mode to manually select agents.
+  --export FILE          Export detection profile to JSON file.
   --branch NAME          Override the claude-agents branch to download from.
   --repo URL             Override the base raw URL for the claude-agents repository.
   -h, --help             Show this help message.
@@ -56,6 +57,7 @@ FORCE=false
 MIN_CONFIDENCE=25  # Default minimum confidence threshold
 VERBOSE=false
 INTERACTIVE=false
+EXPORT_FILE=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -73,6 +75,12 @@ while [[ $# -gt 0 ]]; do
       ;;
     --interactive)
       INTERACTIVE=true
+      shift
+      ;;
+    --export)
+      shift
+      [[ $# -gt 0 ]] || { echo "Missing value for --export" >&2; exit 1; }
+      EXPORT_FILE="$1"
       shift
       ;;
     --min-confidence)
@@ -426,6 +434,90 @@ interactive_selection() {
   done
 
   log "Selected ${#recommended_agents[@]} agents for installation"
+}
+
+# Profile export functionality (Task 8)
+export_profile() {
+  local output_file="$1"
+
+  # Check if file exists (unless --force is used)
+  if [[ -f "$output_file" ]] && [[ $FORCE == false ]]; then
+    echo "Error: File already exists: $output_file (use --force to overwrite)" >&2
+    exit 1
+  fi
+
+  local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+  local project_name=$(basename "$PWD")
+
+  # Start JSON
+  cat > "$output_file" <<EOF
+{
+  "version": "1.0",
+  "generated_at": "$timestamp",
+  "project_name": "$project_name",
+  "detection_results": {
+    "agents_recommended": [
+EOF
+
+  # Add agents
+  local first=true
+  for agent in "${recommended_agents[@]}"; do
+    [[ $first == false ]] && echo "," >> "$output_file"
+    first=false
+
+    local confidence="${agent_confidence[$agent]:-0}"
+    local category="${AGENT_CATEGORIES[$agent]:-Uncategorized}"
+    local matched_patterns="${agent_matched_patterns[$agent]:-}"
+
+    # Convert matched patterns to JSON array
+    local patterns_json="[]"
+    if [[ -n "$matched_patterns" ]]; then
+      patterns_json="["
+      local first_pattern=true
+      for pattern in $matched_patterns; do
+        [[ $first_pattern == false ]] && patterns_json="$patterns_json,"
+        first_pattern=false
+        # Escape quotes in pattern
+        pattern=$(echo "$pattern" | sed 's/"/\\"/g')
+        patterns_json="$patterns_json\"$pattern\""
+      done
+      patterns_json="$patterns_json]"
+    fi
+
+    cat >> "$output_file" <<EOF
+      {
+        "name": "$agent",
+        "confidence": $confidence,
+        "category": "$category",
+        "patterns_matched": $patterns_json
+      }
+EOF
+  done
+
+  # Close agents array and add selected agents
+  cat >> "$output_file" <<EOF
+
+    ]
+  },
+  "selected_agents": [
+EOF
+
+  # Add selected agents list
+  first=true
+  for agent in "${recommended_agents[@]}"; do
+    [[ $first == false ]] && echo "," >> "$output_file"
+    first=false
+    echo -n "    \"$agent\"" >> "$output_file"
+  done
+
+  # Close JSON
+  cat >> "$output_file" <<EOF
+
+  ]
+}
+EOF
+
+  log "Profile exported to $output_file"
 }
 
 # Parse AGENTS_REGISTRY.md to extract agent metadata
@@ -1099,6 +1191,16 @@ if [[ $VERBOSE == true ]]; then
 
   echo "═══════════════════════════════════════════════════════════════════════"
   echo ""
+fi
+
+# Export profile if requested
+if [[ -n "$EXPORT_FILE" ]]; then
+  export_profile "$EXPORT_FILE"
+
+  # If dry-run or only exporting, exit
+  if $DRY_RUN; then
+    exit 0
+  fi
 fi
 
 if $DRY_RUN; then
