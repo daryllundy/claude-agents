@@ -284,6 +284,49 @@ These agents are specialized prompts designed for Claude Code Pro's Task tool. W
 4. **Results return** to your main conversation
 5. **You review and proceed** with the next step
 
+## Customizing Agent Detection Patterns
+
+The agent recommendation script uses externalized detection patterns stored in `data/agent_patterns.yaml`. This allows you to customize how agents are detected and recommended without modifying the shell script.
+
+### Pattern File Structure
+
+The YAML file defines detection patterns for each agent with three types:
+- **file**: Matches file names or extensions (e.g., `*.tf`, `package.json`)
+- **path**: Matches directory names (e.g., `terraform/`, `k8s/`)
+- **content**: Matches text within files (e.g., `terraform`, `apiVersion`)
+
+Each pattern has a weight (0-25) that contributes to the agent's confidence score.
+
+### Example Pattern Definition
+
+```yaml
+agents:
+  terraform-specialist:
+    category: infrastructure
+    description: "Terraform Infrastructure as Code expert"
+    patterns:
+      - type: file
+        pattern: "*.tf"
+        weight: 20
+      - type: file
+        pattern: "terraform.tfstate"
+        weight: 25
+      - type: content
+        pattern: "terraform"
+        weight: 10
+```
+
+### Customization Options
+
+1. **Adjust pattern weights**: Change weights to fine-tune detection sensitivity
+2. **Add new patterns**: Include additional file types or content patterns
+3. **Create custom agents**: Define new agents with their own patterns
+4. **Override patterns**: Place a customized `agent_patterns.yaml` in your project's `.claude/` directory
+
+### Fallback Mechanism
+
+If the YAML file is not found or fails to parse, the script automatically falls back to hardcoded patterns, ensuring the recommendation system always works.
+
 ## MCP Code Execution
 
 Several agents now include **Model Context Protocol (MCP) Code Execution** capabilities for enhanced data processing and tool integration:

@@ -1,0 +1,885 @@
+# Agent Detection Patterns
+# This file contains detection patterns for all specialized agents.
+# Each pattern contributes to an agent's confidence score when matched.
+#
+# Pattern Format:
+#   - type: file | path | content
+#   - pattern: The pattern to match (glob for files, string for paths, regex for content)
+#   - weight: 0-25 (contribution to confidence score)
+#
+# Categories:
+#   - infrastructure: Cloud, IaC, containers, orchestration
+#   - development: Language-specific, frontend, mobile, database
+#   - quality: Testing, security, code review, performance
+#   - operations: Deployment, monitoring, migrations, dependencies
+#   - productivity: Scaffolding, documentation, debugging
+#   - business: Validation, architecture, compliance, localization
+#   - specialized: Data science, observability
+
+version: "2.0"
+
+agents:
+  # ============================================================================
+  # Infrastructure Agents
+  # ============================================================================
+
+  devops-orchestrator:
+    category: infrastructure
+    description: "Multi-tool DevOps environment orchestrator"
+    patterns:
+      - type: path
+        pattern: ".github/workflows"
+        weight: 5
+      - type: path
+        pattern: ".gitlab-ci"
+        weight: 5
+      - type: file
+        pattern: "Jenkinsfile"
+        weight: 5
+      - type: path
+        pattern: "terraform"
+        weight: 5
+      - type: file
+        pattern: "*.tf"
+        weight: 5
+      - type: path
+        pattern: "k8s"
+        weight: 5
+      - type: path
+        pattern: "kubernetes"
+        weight: 5
+      - type: file
+        pattern: "prometheus.yml"
+        weight: 5
+      - type: path
+        pattern: "ansible"
+        weight: 5
+
+  aws-specialist:
+    category: infrastructure
+    description: "Amazon Web Services expert"
+    patterns:
+      - type: file
+        pattern: "*.tf"
+        weight: 10
+      - type: content
+        pattern: 'provider "aws"'
+        weight: 20
+      - type: content
+        pattern: "aws_"
+        weight: 15
+      - type: file
+        pattern: "cloudformation.yaml"
+        weight: 15
+      - type: file
+        pattern: "cloudformation.yml"
+        weight: 15
+      - type: file
+        pattern: "cdk.json"
+        weight: 15
+      - type: file
+        pattern: "cdk.context.json"
+        weight: 15
+      - type: path
+        pattern: ".aws"
+        weight: 10
+      - type: path
+        pattern: "cloudformation"
+        weight: 15
+      - type: content
+        pattern: "AWS::CloudFormation"
+        weight: 15
+      - type: content
+        pattern: "aws-cdk"
+        weight: 10
+      - type: content
+        pattern: "@aws-cdk"
+        weight: 10
+
+  azure-specialist:
+    category: infrastructure
+    description: "Microsoft Azure expert"
+    patterns:
+      - type: file
+        pattern: "*.bicep"
+        weight: 20
+      - type: file
+        pattern: "azuredeploy.json"
+        weight: 15
+      - type: file
+        pattern: "azuredeploy.parameters.json"
+        weight: 10
+      - type: content
+        pattern: "deploymentTemplate"
+        weight: 15
+      - type: content
+        pattern: '$schema.*deploymentTemplate'
+        weight: 15
+      - type: file
+        pattern: "azure-pipelines.yml"
+        weight: 15
+      - type: file
+        pattern: "azure-pipelines.yaml"
+        weight: 15
+      - type: content
+        pattern: 'provider "azurerm"'
+        weight: 20
+      - type: content
+        pattern: "azurerm_"
+        weight: 15
+      - type: content
+        pattern: "Microsoft.Compute"
+        weight: 10
+      - type: content
+        pattern: "Microsoft.Resources"
+        weight: 10
+      - type: path
+        pattern: ".azure"
+        weight: 10
+
+  gcp-specialist:
+    category: infrastructure
+    description: "Google Cloud Platform expert"
+    patterns:
+      - type: file
+        pattern: "app.yaml"
+        weight: 15
+      - type: path
+        pattern: ".config/gcloud"
+        weight: 10
+      - type: content
+        pattern: 'provider "google"'
+        weight: 20
+      - type: content
+        pattern: "google_"
+        weight: 15
+      - type: file
+        pattern: "deployment-manager.yaml"
+        weight: 15
+      - type: file
+        pattern: "*.jinja"
+        weight: 10
+      - type: path
+        pattern: "deployment"
+        weight: 10
+      - type: content
+        pattern: "gcp.googleapis.com"
+        weight: 10
+      - type: content
+        pattern: "googleapis.com"
+        weight: 10
+      - type: content
+        pattern: "gcloud"
+        weight: 10
+      - type: file
+        pattern: "cloudbuild.yaml"
+        weight: 15
+
+  terraform-specialist:
+    category: infrastructure
+    description: "Terraform Infrastructure as Code expert"
+    patterns:
+      - type: file
+        pattern: "*.tf"
+        weight: 20
+      - type: file
+        pattern: "*.tfvars"
+        weight: 15
+      - type: file
+        pattern: "terraform.tfstate"
+        weight: 25
+      - type: file
+        pattern: "terraform.tfstate.backup"
+        weight: 20
+      - type: file
+        pattern: ".terraform.lock.hcl"
+        weight: 15
+      - type: path
+        pattern: ".terraform"
+        weight: 15
+      - type: content
+        pattern: "terraform"
+        weight: 10
+      - type: content
+        pattern: "module"
+        weight: 10
+      - type: content
+        pattern: "resource"
+        weight: 5
+
+  ansible-specialist:
+    category: infrastructure
+    description: "Ansible automation and configuration management expert"
+    patterns:
+      - type: file
+        pattern: "ansible.cfg"
+        weight: 20
+      - type: file
+        pattern: "playbook.yml"
+        weight: 15
+      - type: file
+        pattern: "playbook.yaml"
+        weight: 15
+      - type: path
+        pattern: "roles"
+        weight: 15
+      - type: path
+        pattern: "inventory"
+        weight: 10
+      - type: file
+        pattern: "requirements.yml"
+        weight: 10
+      - type: content
+        pattern: "ansible.builtin"
+        weight: 15
+      - type: content
+        pattern: "hosts:"
+        weight: 10
+      - type: content
+        pattern: "tasks:"
+        weight: 10
+
+  cicd-specialist:
+    category: infrastructure
+    description: "Continuous Integration/Deployment expert"
+    patterns:
+      - type: path
+        pattern: ".github/workflows"
+        weight: 20
+      - type: file
+        pattern: ".gitlab-ci.yml"
+        weight: 20
+      - type: file
+        pattern: "Jenkinsfile"
+        weight: 20
+      - type: path
+        pattern: ".circleci"
+        weight: 20
+      - type: file
+        pattern: "circle.yml"
+        weight: 15
+      - type: file
+        pattern: "azure-pipelines.yml"
+        weight: 20
+      - type: file
+        pattern: ".travis.yml"
+        weight: 15
+      - type: file
+        pattern: "buildspec.yml"
+        weight: 15
+      - type: content
+        pattern: "pipeline"
+        weight: 10
+      - type: content
+        pattern: "ci/cd"
+        weight: 10
+      - type: content
+        pattern: "continuous integration"
+        weight: 10
+
+  kubernetes-specialist:
+    category: infrastructure
+    description: "Kubernetes orchestration expert"
+    patterns:
+      - type: path
+        pattern: "k8s"
+        weight: 20
+      - type: path
+        pattern: "kubernetes"
+        weight: 20
+      - type: file
+        pattern: "Chart.yaml"
+        weight: 20
+      - type: file
+        pattern: "values.yaml"
+        weight: 15
+      - type: file
+        pattern: "kustomization.yaml"
+        weight: 20
+      - type: content
+        pattern: "apiVersion"
+        weight: 10
+      - type: content
+        pattern: "kind: Deployment"
+        weight: 15
+      - type: content
+        pattern: "kind: Service"
+        weight: 10
+      - type: content
+        pattern: "kind: StatefulSet"
+        weight: 10
+      - type: content
+        pattern: "kubectl"
+        weight: 10
+      - type: file
+        pattern: "skaffold.yaml"
+        weight: 15
+
+  monitoring-specialist:
+    category: infrastructure
+    description: "System monitoring and alerting expert"
+    patterns:
+      - type: file
+        pattern: "prometheus.yml"
+        weight: 20
+      - type: file
+        pattern: "prometheus.yaml"
+        weight: 20
+      - type: path
+        pattern: "prometheus"
+        weight: 15
+      - type: path
+        pattern: "grafana"
+        weight: 15
+      - type: file
+        pattern: "grafana.ini"
+        weight: 15
+      - type: file
+        pattern: "elasticsearch.yml"
+        weight: 15
+      - type: file
+        pattern: "logstash.conf"
+        weight: 15
+      - type: file
+        pattern: "kibana.yml"
+        weight: 15
+      - type: content
+        pattern: "metrics"
+        weight: 10
+      - type: content
+        pattern: "observability"
+        weight: 10
+      - type: content
+        pattern: "alertmanager"
+        weight: 10
+      - type: path
+        pattern: "monitoring"
+        weight: 15
+
+  docker-specialist:
+    category: infrastructure
+    description: "Docker containerization expert"
+    patterns:
+      - type: file
+        pattern: "Dockerfile"
+        weight: 25
+      - type: file
+        pattern: "docker-compose.yml"
+        weight: 20
+      - type: file
+        pattern: "docker-compose.yaml"
+        weight: 20
+      - type: file
+        pattern: ".dockerignore"
+        weight: 10
+      - type: file
+        pattern: "Containerfile"
+        weight: 20
+      - type: content
+        pattern: "FROM"
+        weight: 10
+
+  observability-specialist:
+    category: infrastructure
+    description: "Application observability and tracing expert"
+    patterns:
+      - type: content
+        pattern: "prometheus"
+        weight: 15
+      - type: content
+        pattern: "grafana"
+        weight: 15
+      - type: content
+        pattern: "opentelemetry"
+        weight: 20
+      - type: content
+        pattern: "jaeger"
+        weight: 15
+      - type: content
+        pattern: "zipkin"
+        weight: 15
+      - type: path
+        pattern: "monitoring"
+        weight: 10
+
+  # ============================================================================
+  # Development Agents
+  # ============================================================================
+
+  database-specialist:
+    category: development
+    description: "Database design and optimization expert"
+    patterns:
+      - type: file
+        pattern: "schema.prisma"
+        weight: 20
+      - type: path
+        pattern: "migrations"
+        weight: 15
+      - type: path
+        pattern: "db/migrate"
+        weight: 15
+      - type: file
+        pattern: "*.sql"
+        weight: 10
+      - type: content
+        pattern: "CREATE TABLE"
+        weight: 15
+      - type: content
+        pattern: "SELECT"
+        weight: 5
+      - type: content
+        pattern: "prisma"
+        weight: 10
+
+  frontend-specialist:
+    category: development
+    description: "Modern frontend development expert"
+    patterns:
+      - type: content
+        pattern: "react"
+        weight: 15
+      - type: content
+        pattern: "vue"
+        weight: 15
+      - type: content
+        pattern: "angular"
+        weight: 15
+      - type: content
+        pattern: "next"
+        weight: 15
+      - type: path
+        pattern: "src/components"
+        weight: 15
+      - type: path
+        pattern: "components"
+        weight: 10
+      - type: path
+        pattern: "frontend"
+        weight: 10
+      - type: file
+        pattern: "package.json"
+        weight: 5
+
+  mobile-specialist:
+    category: development
+    description: "Mobile app development expert"
+    patterns:
+      - type: path
+        pattern: "android"
+        weight: 20
+      - type: path
+        pattern: "ios"
+        weight: 20
+      - type: file
+        pattern: "pubspec.yaml"
+        weight: 20
+      - type: content
+        pattern: "ReactNative"
+        weight: 20
+      - type: content
+        pattern: "Flutter"
+        weight: 15
+      - type: file
+        pattern: "Podfile"
+        weight: 15
+      - type: file
+        pattern: "build.gradle"
+        weight: 10
+
+  # ============================================================================
+  # Quality Agents
+  # ============================================================================
+
+  test-specialist:
+    category: quality
+    description: "Testing strategy and implementation expert"
+    patterns:
+      - type: path
+        pattern: "tests"
+        weight: 15
+      - type: path
+        pattern: "__tests__"
+        weight: 15
+      - type: path
+        pattern: "spec"
+        weight: 15
+      - type: file
+        pattern: "pytest.ini"
+        weight: 15
+      - type: file
+        pattern: "jest.config.js"
+        weight: 15
+      - type: file
+        pattern: "vitest.config.ts"
+        weight: 15
+      - type: file
+        pattern: "playwright.config.ts"
+        weight: 15
+      - type: content
+        pattern: "describe("
+        weight: 10
+
+  security-specialist:
+    category: quality
+    description: "Application security expert"
+    patterns:
+      - type: content
+        pattern: "jwt"
+        weight: 10
+      - type: content
+        pattern: "bcrypt"
+        weight: 10
+      - type: content
+        pattern: "helmet"
+        weight: 10
+      - type: content
+        pattern: "csrf"
+        weight: 10
+      - type: content
+        pattern: "authentication"
+        weight: 10
+      - type: content
+        pattern: "authorization"
+        weight: 10
+      - type: file
+        pattern: "security.yml"
+        weight: 15
+
+  code-review-specialist:
+    category: quality
+    description: "Code quality and review expert"
+    patterns:
+      - type: file
+        pattern: ".codeclimate.yml"
+        weight: 15
+      - type: content
+        pattern: "TODO:"
+        weight: 10
+      - type: content
+        pattern: "FIXME:"
+        weight: 10
+      - type: content
+        pattern: "refactor"
+        weight: 10
+      - type: file
+        pattern: ".eslintrc"
+        weight: 10
+      - type: file
+        pattern: ".prettierrc"
+        weight: 10
+
+  refactoring-specialist:
+    category: quality
+    description: "Code refactoring and improvement expert"
+    patterns:
+      - type: content
+        pattern: "technical debt"
+        weight: 15
+      - type: content
+        pattern: "legacy code"
+        weight: 15
+      - type: path
+        pattern: "src/legacy"
+        weight: 20
+      - type: path
+        pattern: "legacy"
+        weight: 15
+      - type: content
+        pattern: "deprecated"
+        weight: 10
+      - type: content
+        pattern: "refactor"
+        weight: 10
+
+  performance-specialist:
+    category: quality
+    description: "Performance optimization expert"
+    patterns:
+      - type: content
+        pattern: "performance"
+        weight: 15
+      - type: content
+        pattern: "profiling"
+        weight: 15
+      - type: content
+        pattern: "latency"
+        weight: 10
+      - type: content
+        pattern: "optimization"
+        weight: 10
+      - type: content
+        pattern: "cache"
+        weight: 10
+      - type: file
+        pattern: "lighthouse.config.js"
+        weight: 15
+
+  # ============================================================================
+  # Operations Agents
+  # ============================================================================
+
+  migration-specialist:
+    category: operations
+    description: "Database and system migration expert"
+    patterns:
+      - type: path
+        pattern: "migrations"
+        weight: 20
+      - type: path
+        pattern: "db/migrate"
+        weight: 20
+      - type: path
+        pattern: "prisma/migrations"
+        weight: 20
+      - type: file
+        pattern: "*migration*.sql"
+        weight: 15
+      - type: content
+        pattern: "ALTER TABLE"
+        weight: 15
+      - type: content
+        pattern: "migration"
+        weight: 10
+
+  dependency-specialist:
+    category: operations
+    description: "Dependency management expert"
+    patterns:
+      - type: file
+        pattern: "package-lock.json"
+        weight: 15
+      - type: file
+        pattern: "yarn.lock"
+        weight: 15
+      - type: file
+        pattern: "pnpm-lock.yaml"
+        weight: 15
+      - type: file
+        pattern: "requirements.txt"
+        weight: 15
+      - type: file
+        pattern: "poetry.lock"
+        weight: 15
+      - type: file
+        pattern: "Gemfile.lock"
+        weight: 15
+      - type: file
+        pattern: "go.sum"
+        weight: 15
+
+  git-specialist:
+    category: operations
+    description: "Git workflow and repository management expert"
+    patterns:
+      - type: file
+        pattern: ".gitmodules"
+        weight: 20
+      - type: path
+        pattern: ".git/hooks"
+        weight: 15
+      - type: file
+        pattern: ".gitattributes"
+        weight: 10
+      - type: content
+        pattern: "submodule"
+        weight: 15
+      - type: file
+        pattern: ".gitmessage"
+        weight: 10
+
+  # ============================================================================
+  # Productivity Agents
+  # ============================================================================
+
+  scaffolding-specialist:
+    category: productivity
+    description: "Project scaffolding and code generation expert"
+    patterns:
+      - type: path
+        pattern: "scripts/scaffold"
+        weight: 20
+      - type: path
+        pattern: "templates"
+        weight: 15
+      - type: content
+        pattern: "plopfile"
+        weight: 20
+      - type: content
+        pattern: "scaffold"
+        weight: 15
+      - type: file
+        pattern: "generator.js"
+        weight: 15
+      - type: path
+        pattern: "blueprints"
+        weight: 15
+
+  documentation-specialist:
+    category: productivity
+    description: "Technical documentation expert"
+    patterns:
+      - type: path
+        pattern: "docs"
+        weight: 15
+      - type: file
+        pattern: "mkdocs.yml"
+        weight: 20
+      - type: file
+        pattern: "docusaurus.config.js"
+        weight: 20
+      - type: file
+        pattern: "README.md"
+        weight: 5
+      - type: path
+        pattern: "documentation"
+        weight: 15
+      - type: file
+        pattern: ".readthedocs.yml"
+        weight: 15
+
+  debugging-specialist:
+    category: productivity
+    description: "Application debugging and troubleshooting expert"
+    patterns:
+      - type: content
+        pattern: "sentry"
+        weight: 15
+      - type: content
+        pattern: "bugsnag"
+        weight: 15
+      - type: content
+        pattern: "logger.error"
+        weight: 10
+      - type: content
+        pattern: "console.error"
+        weight: 5
+      - type: content
+        pattern: "debugger"
+        weight: 10
+      - type: file
+        pattern: ".sentryclirc"
+        weight: 15
+
+  # ============================================================================
+  # Business Agents
+  # ============================================================================
+
+  validation-specialist:
+    category: business
+    description: "Input validation and schema validation expert"
+    patterns:
+      - type: content
+        pattern: "validation"
+        weight: 15
+      - type: content
+        pattern: "schema validation"
+        weight: 15
+      - type: content
+        pattern: "yup"
+        weight: 15
+      - type: content
+        pattern: "zod"
+        weight: 15
+      - type: content
+        pattern: "joi"
+        weight: 15
+      - type: content
+        pattern: "validator"
+        weight: 10
+
+  architecture-specialist:
+    category: business
+    description: "Software architecture and design expert"
+    patterns:
+      - type: file
+        pattern: "architecture.md"
+        weight: 20
+      - type: content
+        pattern: "architecture decision record"
+        weight: 20
+      - type: content
+        pattern: "ADR"
+        weight: 15
+      - type: path
+        pattern: "docs/architecture"
+        weight: 15
+      - type: path
+        pattern: "adr"
+        weight: 20
+
+  localization-specialist:
+    category: business
+    description: "Internationalization and localization expert"
+    patterns:
+      - type: path
+        pattern: "i18n"
+        weight: 20
+      - type: path
+        pattern: "locales"
+        weight: 20
+      - type: file
+        pattern: ".i18nrc"
+        weight: 15
+      - type: content
+        pattern: "react-intl"
+        weight: 15
+      - type: content
+        pattern: "i18next"
+        weight: 15
+      - type: content
+        pattern: "translation"
+        weight: 10
+
+  compliance-specialist:
+    category: business
+    description: "Regulatory compliance expert"
+    patterns:
+      - type: content
+        pattern: "gdpr"
+        weight: 15
+      - type: content
+        pattern: "hipaa"
+        weight: 15
+      - type: content
+        pattern: "pci-dss"
+        weight: 15
+      - type: content
+        pattern: "soc 2"
+        weight: 15
+      - type: content
+        pattern: "compliance"
+        weight: 10
+      - type: path
+        pattern: "compliance"
+        weight: 15
+
+  # ============================================================================
+  # Specialized Agents
+  # ============================================================================
+
+  data-science-specialist:
+    category: specialized
+    description: "Data science and machine learning expert"
+    patterns:
+      - type: path
+        pattern: "notebooks"
+        weight: 20
+      - type: file
+        pattern: "environment.yml"
+        weight: 15
+      - type: content
+        pattern: "pandas"
+        weight: 15
+      - type: content
+        pattern: "scikit-learn"
+        weight: 15
+      - type: content
+        pattern: "tensorflow"
+        weight: 15
+      - type: content
+        pattern: "pytorch"
+        weight: 15
+      - type: file
+        pattern: "*.ipynb"
+        weight: 20

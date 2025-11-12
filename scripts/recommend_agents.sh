@@ -1413,11 +1413,187 @@ parse_agent_registry() {
   return 0
 }
 
-# Initialize detection patterns for all 30 agents
+# Parse YAML pattern file and populate AGENT_PATTERNS
+# Returns 0 on success, 1 if file not found or parse error
+parse_yaml_patterns() {
+  local yaml_file="$1"
+
+  # Check if file exists
+  if [[ ! -f "$yaml_file" ]]; then
+    return 1
+  fi
+
+  local current_agent=""
+  local in_patterns=false
+  local pattern_buffer=""
+  local current_type=""
+  local current_pattern=""
+  local current_weight=""
+
+  while IFS= read -r line; do
+    # Skip comments and empty lines
+    [[ "$line" =~ ^[[:space:]]*# ]] && continue
+    [[ "$line" =~ ^[[:space:]]*$ ]] && continue
+
+    # Detect agent name (2-space indent, followed by colon)
+    # Skip top-level keys like "version" and "agents"
+    if [[ "$line" =~ ^[[:space:]]{2}([a-z0-9-]+):$ ]]; then
+      local agent_name="${BASH_REMATCH[1]}"
+
+      # Skip metadata keys
+      if [[ "$agent_name" == "agents" || "$agent_name" == "version" ]]; then
+        continue
+      fi
+
+      # Save previous agent's patterns if any
+      if [[ -n "$current_agent" && -n "$pattern_buffer" ]]; then
+        AGENT_PATTERNS["$current_agent"]="$pattern_buffer"
+      fi
+
+      # Start new agent
+      current_agent="$agent_name"
+      pattern_buffer=""
+      in_patterns=false
+      current_type=""
+      current_pattern=""
+      current_weight=""
+      continue
+    fi
+
+    # Detect patterns section for current agent (4-space indent)
+    if [[ -n "$current_agent" && "$line" =~ ^[[:space:]]{4}patterns:$ ]]; then
+      in_patterns=true
+      current_type=""
+      current_pattern=""
+      current_weight=""
+      continue
+    fi
+
+    # Parse pattern fields when in patterns section
+    if [[ "$in_patterns" == true ]]; then
+      # Parse pattern array items (6-space indent, starting with "- type:")
+      if [[ "$line" =~ ^[[:space:]]{6}-[[:space:]]+type:[[:space:]]*(.+)$ ]]; then
+        # Save previous pattern if complete
+        if [[ -n "$current_type" && -n "$current_pattern" && -n "$current_weight" ]]; then
+          pattern_buffer+="${current_type}:${current_pattern}:${current_weight}"$'\n'
+        fi
+        # Start new pattern and extract type
+        current_type="${BASH_REMATCH[1]}"
+        current_pattern=""
+        current_weight=""
+        continue
+      fi
+
+      # Extract pattern (8-space indent, handle quoted and unquoted strings)
+      if [[ "$line" =~ ^[[:space:]]{8}pattern:[[:space:]]*\"(.+)\"$ ]]; then
+        current_pattern="${BASH_REMATCH[1]}"
+        continue
+      elif [[ "$line" =~ ^[[:space:]]{8}pattern:[[:space:]]*\'(.+)\'$ ]]; then
+        current_pattern="${BASH_REMATCH[1]}"
+        continue
+      elif [[ "$line" =~ ^[[:space:]]{8}pattern:[[:space:]]*(.+)$ ]]; then
+        current_pattern="${BASH_REMATCH[1]}"
+        # Remove quotes if present
+        current_pattern="${current_pattern%\"}"
+        current_pattern="${current_pattern#\"}"
+        current_pattern="${current_pattern%\'}"
+        current_pattern="${current_pattern#\'}"
+        continue
+      fi
+
+      # Extract weight (8-space indent)
+      if [[ "$line" =~ ^[[:space:]]{8}weight:[[:space:]]*([0-9]+)$ ]]; then
+        current_weight="${BASH_REMATCH[1]}"
+        # Pattern is complete, save it
+        if [[ -n "$current_type" && -n "$current_pattern" ]]; then
+          pattern_buffer+="${current_type}:${current_pattern}:${current_weight}"$'\n'
+          current_type=""
+          current_pattern=""
+          current_weight=""
+        fi
+        continue
+      fi
+
+      # Check if we're leaving patterns section
+      if [[ "$line" =~ ^[[:space:]]{4}[a-z] && ! "$line" =~ ^[[:space:]]{6}- ]]; then
+        # Save last pattern if complete
+        if [[ -n "$current_type" && -n "$current_pattern" && -n "$current_weight" ]]; then
+          pattern_buffer+="${current_type}:${current_pattern}:${current_weight}"$'\n'
+        fi
+        in_patterns=false
+        current_type=""
+        current_pattern=""
+        current_weight=""
+      fi
+    fi
+
+  done < "$yaml_file"
+
+  # Save last agent's patterns
+  if [[ -n "$current_agent" && -n "$pattern_buffer" ]]; then
+    AGENT_PATTERNS["$current_agent"]="$pattern_buffer"
+  fi
+
+  # Save last incomplete pattern if any
+  if [[ "$in_patterns" == true && -n "$current_type" && -n "$current_pattern" && -n "$current_weight" ]]; then
+    pattern_buffer+="${current_type}:${current_pattern}:${current_weight}"$'\n'
+    AGENT_PATTERNS["$current_agent"]="$pattern_buffer"
+  fi
+
+  return 0
+}
+
+# Load detection patterns from YAML file with fallback to hardcoded patterns
 # Pattern format: "type:pattern:weight" (one per line)
 # Types: file, path, content
 # Weight: 0-25 (contribution to confidence score)
-initialize_detection_patterns() {
+load_detection_patterns() {
+  # Determine YAML file location
+  # Try in order: data/ directory, same directory as script, relative to working directory
+  local yaml_file=""
+  local script_dir
+  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+  # Try multiple locations
+  for candidate in \
+    "${script_dir}/../data/agent_patterns.yaml" \
+    "${script_dir}/data/agent_patterns.yaml" \
+    "data/agent_patterns.yaml" \
+    ".claude/agent_patterns.yaml"
+  do
+    if [[ -f "$candidate" ]]; then
+      yaml_file="$candidate"
+      break
+    fi
+  done
+
+  # Try to load from YAML
+  if [[ -n "$yaml_file" ]]; then
+    if parse_yaml_patterns "$yaml_file"; then
+      # Check if any patterns were loaded (safe for nounset)
+      local count=0
+      if [[ -n "${!AGENT_PATTERNS[@]}" ]]; then
+        count="${#AGENT_PATTERNS[@]}"
+      fi
+      if [[ "$count" -gt 0 ]]; then
+        echo "✓ Loaded $count agent detection patterns from ${yaml_file##*/}" >&2
+        return 0
+      fi
+    fi
+  fi
+
+  # Fallback to hardcoded patterns
+  echo "⚠ YAML pattern file not found or failed to parse, using hardcoded patterns" >&2
+  initialize_detection_patterns_hardcoded
+  return 0
+}
+
+# Initialize detection patterns for all 30 agents (LEGACY/FALLBACK)
+# This function is now used as a fallback when YAML file is not available
+# Pattern format: "type:pattern:weight" (one per line)
+# Types: file, path, content
+# Weight: 0-25 (contribution to confidence score)
+initialize_detection_patterns_hardcoded() {
   # Infrastructure Agents
   
   AGENT_PATTERNS["devops-orchestrator"]="
@@ -1796,11 +1972,12 @@ declare -A AGENT_MAX_WEIGHTS_CACHE
 # Get max possible weight with caching
 get_max_possible_weight() {
   local agent="$1"
-  
-  if [[ -z "${AGENT_MAX_WEIGHTS_CACHE[$agent]}" ]]; then
+
+  # Check if agent is in cache (safe for nounset)
+  if [[ -z "${AGENT_MAX_WEIGHTS_CACHE[$agent]+x}" ]]; then
     AGENT_MAX_WEIGHTS_CACHE[$agent]=$(calculate_max_possible_weight "$agent")
   fi
-  
+
   echo "${AGENT_MAX_WEIGHTS_CACHE[$agent]}"
 }
 
@@ -2030,8 +2207,8 @@ calculate_confidence() {
   echo "$confidence"
 }
 
-# Initialize detection patterns
-initialize_detection_patterns
+# Load detection patterns (from YAML or fallback to hardcoded)
+load_detection_patterns
 
 # Handle import mode - skip detection and install agents from profile (Task 9)
 if [[ -n "$IMPORT_FILE" ]]; then
