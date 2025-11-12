@@ -40,6 +40,8 @@ Options:
   --force                Redownload agent files even if they already exist locally.
   --min-confidence NUM   Only recommend agents with confidence >= NUM (0-100).
   --verbose              Display detailed detection results with all patterns checked.
+  --debug-confidence [AGENT]  Show detailed confidence calculation for agent(s).
+  --show-max-weights     Display maximum possible weights for all agents.
   --interactive          Enter interactive mode to manually select agents.
   --export FILE          Export detection profile to JSON file.
   --import FILE          Import and install agents from a profile JSON file.
@@ -64,6 +66,8 @@ EXPORT_FILE=""
 IMPORT_FILE=""
 CHECK_UPDATES=false
 UPDATE_ALL=false
+DEBUG_CONFIDENCE=""
+SHOW_MAX_WEIGHTS=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -77,6 +81,19 @@ while [[ $# -gt 0 ]]; do
       ;;
     --verbose)
       VERBOSE=true
+      shift
+      ;;
+    --debug-confidence)
+      shift
+      if [[ $# -gt 0 ]] && [[ ! "$1" =~ ^-- ]]; then
+        DEBUG_CONFIDENCE="$1"
+        shift
+      else
+        DEBUG_CONFIDENCE="all"
+      fi
+      ;;
+    --show-max-weights)
+      SHOW_MAX_WEIGHTS=true
       shift
       ;;
     --interactive)
@@ -1457,14 +1474,190 @@ add_agent() {
 declare -A agent_confidence
 declare -A agent_matched_patterns
 
+# Calculate maximum possible weight for an agent
+calculate_max_possible_weight() {
+  local agent="$1"
+  local max_weight=0
+  
+  local patterns="${AGENT_PATTERNS[$agent]}"
+  
+  while IFS= read -r pattern_line; do
+    [[ -z "$pattern_line" ]] && continue
+    
+    pattern_line=$(echo "$pattern_line" | xargs)
+    [[ -z "$pattern_line" ]] && continue
+    
+    # Parse pattern: type:pattern:weight
+    local rest="${pattern_line#*:}"
+    local weight="${rest##*:}"
+    
+    if [[ "$weight" =~ ^[0-9]+$ ]]; then
+      max_weight=$((max_weight + weight))
+    fi
+  done <<< "$patterns"
+  
+  echo "$max_weight"
+}
+
+# Cache for max weights
+declare -A AGENT_MAX_WEIGHTS_CACHE
+
+# Get max possible weight with caching
+get_max_possible_weight() {
+  local agent="$1"
+  
+  if [[ -z "${AGENT_MAX_WEIGHTS_CACHE[$agent]}" ]]; then
+    AGENT_MAX_WEIGHTS_CACHE[$agent]=$(calculate_max_possible_weight "$agent")
+  fi
+  
+  echo "${AGENT_MAX_WEIGHTS_CACHE[$agent]}"
+}
+
+# Validate pattern weights
+validate_pattern_weights() {
+  local errors=0
+  
+  for agent in "${!AGENT_PATTERNS[@]}"; do
+    local max_weight
+    max_weight=$(calculate_max_possible_weight "$agent")
+    
+    if [[ $max_weight -eq 0 ]]; then
+      echo "Warning: Agent '$agent' has zero total pattern weight" >&2
+      ((errors++))
+    elif [[ $max_weight -lt 0 ]]; then
+      echo "Error: Agent '$agent' has negative total pattern weight: $max_weight" >&2
+      ((errors++))
+    fi
+  done
+  
+  if [[ $errors -gt 0 ]]; then
+    echo "Found $errors agents with invalid pattern weights" >&2
+    return 1
+  fi
+  
+  return 0
+}
+
+# Get max weights for all agents (debugging utility)
+get_all_max_weights() {
+  echo "Agent Max Possible Weights"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  printf "%-40s %10s\n" "Agent" "Max Weight"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  
+  for agent in $(printf '%s\n' "${!AGENT_PATTERNS[@]}" | sort); do
+    local max_weight
+    max_weight=$(calculate_max_possible_weight "$agent")
+    printf "%-40s %10d\n" "$agent" "$max_weight"
+  done
+  
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+}
+
+# Debug confidence calculation for an agent
+debug_confidence_calculation() {
+  local agent="$1"
+  
+  echo "═══════════════════════════════════════════════════════════════════════"
+  echo "Confidence Calculation Debug: $agent"
+  echo "═══════════════════════════════════════════════════════════════════════"
+  echo ""
+  
+  local patterns="${AGENT_PATTERNS[$agent]}"
+  local accumulated_weight=0
+  local max_possible_weight=0
+  
+  echo "Pattern Evaluation:"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  printf "%-5s %-8s %-12s %-40s\n" "Match" "Weight" "Type" "Pattern"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  
+  while IFS= read -r pattern_line; do
+    [[ -z "$pattern_line" ]] && continue
+    
+    pattern_line=$(echo "$pattern_line" | xargs)
+    [[ -z "$pattern_line" ]] && continue
+    
+    local type="${pattern_line%%:*}"
+    local rest="${pattern_line#*:}"
+    local weight="${rest##*:}"
+    local pattern="${rest%:*}"
+    
+    [[ -z "$type" || -z "$pattern" || -z "$weight" ]] && continue
+    [[ ! "$weight" =~ ^[0-9]+$ ]] && continue
+    
+    max_possible_weight=$((max_possible_weight + weight))
+    
+    local matches=false
+    local match_symbol="✗"
+    
+    case "$type" in
+      file)
+        if has_file "$pattern"; then
+          matches=true
+          match_symbol="✓"
+          accumulated_weight=$((accumulated_weight + weight))
+        fi
+        ;;
+      path)
+        if has_path "$pattern"; then
+          matches=true
+          match_symbol="✓"
+          accumulated_weight=$((accumulated_weight + weight))
+        fi
+        ;;
+      content)
+        if search_contents "$pattern"; then
+          matches=true
+          match_symbol="✓"
+          accumulated_weight=$((accumulated_weight + weight))
+        fi
+        ;;
+    esac
+    
+    printf "%-5s %-8d %-12s %-40s\n" "$match_symbol" "$weight" "$type" "$pattern"
+  done <<< "$patterns"
+  
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo ""
+  echo "Calculation:"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  printf "%-30s %d\n" "Accumulated Weight:" "$accumulated_weight"
+  printf "%-30s %d\n" "Max Possible Weight:" "$max_possible_weight"
+  
+  local confidence=0
+  if [[ $max_possible_weight -gt 0 ]]; then
+    confidence=$((accumulated_weight * 100 / max_possible_weight))
+    [[ $confidence -gt 100 ]] && confidence=100
+  fi
+  
+  printf "%-30s %d%%\n" "Confidence:" "$confidence"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo ""
+}
+
 calculate_confidence() {
   local agent="$1"
-  local total_weight=0
-  local max_possible_weight=100
+  local accumulated_weight=0
   local matched_patterns=()
   
   # Get detection patterns for this agent
   local patterns="${AGENT_PATTERNS[$agent]}"
+  
+  # Handle empty patterns
+  if [[ -z "$patterns" ]]; then
+    if [[ ${VERBOSE:-false} == true ]]; then
+      log "  $agent: no patterns defined, confidence=0%"
+    fi
+    agent_confidence[$agent]=0
+    agent_matched_patterns[$agent]=""
+    echo "0"
+    return 0
+  fi
+  
+  # Get max possible weight for this agent
+  local max_possible_weight
+  max_possible_weight=$(get_max_possible_weight "$agent")
   
   # Parse and execute each pattern
   while IFS= read -r pattern_line; do
@@ -1497,33 +1690,47 @@ calculate_confidence() {
     case "$type" in
       file)
         if has_file "$pattern"; then
-          total_weight=$((total_weight + weight))
+          accumulated_weight=$((accumulated_weight + weight))
           matched_patterns+=("file:$pattern")
         fi
         ;;
       path)
         if has_path "$pattern"; then
-          total_weight=$((total_weight + weight))
+          accumulated_weight=$((accumulated_weight + weight))
           matched_patterns+=("path:$pattern")
         fi
         ;;
       content)
         if search_contents "$pattern"; then
-          total_weight=$((total_weight + weight))
+          accumulated_weight=$((accumulated_weight + weight))
           matched_patterns+=("content:$pattern")
         fi
         ;;
     esac
   done <<< "$patterns"
   
-  # Calculate percentage score
+  # Calculate percentage score with dynamic max weight
   local confidence=0
   if [[ $max_possible_weight -gt 0 ]]; then
-    confidence=$((total_weight * 100 / max_possible_weight))
+    # Use bc for large numbers if needed
+    if [[ $max_possible_weight -gt 10000 ]]; then
+      confidence=$(echo "scale=0; $accumulated_weight * 100 / $max_possible_weight" | bc)
+    else
+      confidence=$((accumulated_weight * 100 / max_possible_weight))
+    fi
+  else
+    if [[ ${VERBOSE:-false} == true ]]; then
+      log "  Warning: $agent has zero max possible weight"
+    fi
   fi
   
   # Cap at 100
   [[ $confidence -gt 100 ]] && confidence=100
+  
+  # Verbose logging
+  if [[ ${VERBOSE:-false} == true ]]; then
+    log "  $agent: accumulated=$accumulated_weight, max=$max_possible_weight, confidence=$confidence%"
+  fi
   
   # Store results
   agent_confidence[$agent]=$confidence
@@ -1712,6 +1919,24 @@ IFS=$'\n' sorted_agents=($(
 unset IFS
 
 recommended_agents=("${sorted_agents[@]}")
+
+# Handle --show-max-weights flag
+if [[ $SHOW_MAX_WEIGHTS == true ]]; then
+  get_all_max_weights
+  exit 0
+fi
+
+# Handle --debug-confidence flag
+if [[ -n "$DEBUG_CONFIDENCE" ]]; then
+  if [[ "$DEBUG_CONFIDENCE" == "all" ]]; then
+    for agent in $(printf '%s\n' "${!AGENT_PATTERNS[@]}" | sort); do
+      debug_confidence_calculation "$agent"
+    done
+  else
+    debug_confidence_calculation "$DEBUG_CONFIDENCE"
+  fi
+  exit 0
+fi
 
 # Display results using enhanced formatting
 if [[ ${#recommended_agents[@]} -gt 0 ]]; then

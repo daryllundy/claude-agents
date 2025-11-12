@@ -60,6 +60,7 @@ run_suite "Profile Management" "$SCRIPT_DIR/unit/test_profile_management.sh"
 run_suite "Update Detection" "$SCRIPT_DIR/unit/test_update_detection.sh"
 run_suite "Selection State Management" "$SCRIPT_DIR/unit/test_selection_state.sh"
 run_suite "Rendering Functions" "$SCRIPT_DIR/unit/test_rendering.sh"
+run_suite "Confidence Normalization" "$SCRIPT_DIR/unit/test_confidence_normalization.sh"
 
 # Run integration tests
 echo -e "${YELLOW}═══════════════════════════════════════${NC}"
