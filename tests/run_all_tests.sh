@@ -63,6 +63,7 @@ run_suite "Rendering Functions" "$SCRIPT_DIR/unit/test_rendering.sh"
 run_suite "Confidence Normalization" "$SCRIPT_DIR/unit/test_confidence_normalization.sh"
 run_suite "Caching Functions" "$SCRIPT_DIR/unit/test_caching_functions.sh"
 run_suite "Fetch with Retry" "$SCRIPT_DIR/unit/test_fetch_with_retry.sh"
+run_suite "YAML Parser" "$SCRIPT_DIR/unit/test_yaml_parser.sh"
 
 # Run integration tests
 echo -e "${YELLOW}═══════════════════════════════════════${NC}"
@@ -72,6 +73,9 @@ echo ""
 
 run_suite "End-to-End Detection" "$SCRIPT_DIR/integration/test_detection.sh"
 run_suite "Update Operations" "$SCRIPT_DIR/integration/test_update_operations.sh"
+run_suite "Pattern Loading" "$SCRIPT_DIR/integration/test_pattern_loading.sh"
+run_suite "Use Case Metadata" "$SCRIPT_DIR/integration/test_use_case_metadata.sh"
+run_suite "Use Case Simple" "$SCRIPT_DIR/integration/test_use_case_simple.sh"
 
 # Run interactive tests if expect is available
 if command -v expect &> /dev/null; then
