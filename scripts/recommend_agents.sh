@@ -325,6 +325,7 @@ display_agent_details() {
   local symbol=$(get_recommendation_symbol "$confidence")
   local description="${AGENT_DESCRIPTIONS[$agent]:-No description available}"
   local matched_patterns="${agent_matched_patterns[$agent]:-}"
+  local use_case=$(get_use_case_safe "$agent")
 
   printf "  %s %s " "$symbol" "$agent"
   draw_progress_bar "$confidence"
@@ -333,6 +334,11 @@ display_agent_details() {
   # Show description
   if [[ -n "$description" ]]; then
     printf "    %s\n" "$description"
+  fi
+
+  # Show use case
+  if [[ -n "$use_case" ]] && [[ "$use_case" != "No use case information available" ]]; then
+    printf "    Use for: %s\n" "$use_case"
   fi
 
   # Show matched patterns if not verbose (verbose shows all patterns later)
@@ -418,6 +424,65 @@ display_categorized_results() {
 
 # UI Rendering functions (Task 2)
 
+# Get terminal width
+get_terminal_width() {
+  local width=80
+  
+  if command -v tput &> /dev/null; then
+    width=$(tput cols 2>/dev/null || echo "80")
+  elif command -v stty &> /dev/null; then
+    width=$(stty size 2>/dev/null | cut -d' ' -f2 || echo "80")
+  fi
+  
+  echo "$width"
+}
+
+# Format use case text with wrapping
+format_use_case() {
+  local text="$1"
+  local width="${2:-60}"
+  local indent="${3:-0}"
+  
+  if [[ -z "$text" ]]; then
+    echo ""
+    return
+  fi
+  
+  # Simple word wrapping
+  local indent_str=$(printf "%${indent}s" "")
+  echo "$text" | fold -s -w "$width" | sed "s/^/$indent_str/"
+}
+
+# Format use case with automatic width detection
+format_use_case_auto() {
+  local text="$1"
+  local indent="${2:-0}"
+  
+  local term_width
+  term_width=$(get_terminal_width)
+  
+  # Use 80% of terminal width, minimum 40
+  local wrap_width=$((term_width * 80 / 100))
+  [[ $wrap_width -lt 40 ]] && wrap_width=40
+  
+  format_use_case "$text" "$wrap_width" "$indent"
+}
+
+# Get use case safely with fallback
+get_use_case_safe() {
+  local agent="$1"
+  local use_case="${AGENT_USE_CASES[$agent]:-}"
+  
+  if [[ -z "$use_case" ]]; then
+    if [[ ${VERBOSE:-false} == true ]]; then
+      log "  Warning: No use case defined for $agent"
+    fi
+    echo "No use case information available"
+  else
+    echo "$use_case"
+  fi
+}
+
 # Render category header
 render_category_header() {
   local category="$1"
@@ -440,6 +505,7 @@ render_agent_item() {
   local description="$3"
   local is_selected="$4"
   local is_current="$5"
+  local use_case="${6:-}"
   
   # Determine cursor
   local cursor=" "
@@ -456,9 +522,14 @@ render_agent_item() {
   # Display the agent with confidence bar
   printf "%s %s %s (%d%%)\n" "$cursor" "$checkbox" "$agent" "$confidence"
   
-  # Show description if it's the current selection
-  if [[ $is_current -eq 1 ]] && [[ -n "$description" ]]; then
-    printf "      %s\n" "$description"
+  # Show description and use case if it's the current selection
+  if [[ $is_current -eq 1 ]]; then
+    if [[ -n "$description" ]]; then
+      printf "      %s\n" "$description"
+    fi
+    if [[ -n "$use_case" ]] && [[ "$use_case" != "No use case information available" ]]; then
+      printf "      Use for: %s\n" "$use_case"
+    fi
   fi
 }
 
@@ -479,6 +550,7 @@ render_agent_list() {
   local -n confidence_ref=$3
   local -n descriptions_ref=$4
   local -n categories_ref=$5
+  local -n use_cases_ref=$6
   
   clear
   echo "═══════════════════════════════════════════════════════════════════════"
@@ -513,6 +585,7 @@ render_agent_list() {
       for agent in "${agents[@]}"; do
         local confidence="${confidence_ref[$agent]:-0}"
         local description="${descriptions_ref[$agent]:-}"
+        local use_case="${use_cases_ref[$agent]:-}"
         
         # Determine if this is the current selection
         local is_current=0
@@ -523,7 +596,7 @@ render_agent_list() {
         # Determine if this agent is selected
         local is_selected=${SELECTION_STATE[$agent]:-0}
         
-        render_agent_item "$agent" "$confidence" "$description" "$is_selected" "$is_current"
+        render_agent_item "$agent" "$confidence" "$description" "$is_selected" "$is_current" "$use_case"
         
         ((display_index++))
       done
@@ -747,7 +820,7 @@ interactive_selection() {
   # Main interactive loop
   while true; do
     # Render UI using extracted function
-    render_agent_list "$current_index" agent_list agent_confidence AGENT_DESCRIPTIONS AGENT_CATEGORIES
+    render_agent_list "$current_index" agent_list agent_confidence AGENT_DESCRIPTIONS AGENT_CATEGORIES AGENT_USE_CASES
 
     # Read single character
     read -rsn1 key
@@ -812,6 +885,7 @@ EOF
     local confidence="${agent_confidence[$agent]:-0}"
     local category="${AGENT_CATEGORIES[$agent]:-Uncategorized}"
     local matched_patterns="${agent_matched_patterns[$agent]:-}"
+    local use_case="${AGENT_USE_CASES[$agent]:-}"
 
     # Convert matched patterns to JSON array
     local patterns_json="[]"
@@ -828,11 +902,15 @@ EOF
       patterns_json="$patterns_json]"
     fi
 
+    # Escape use case for JSON
+    local use_case_escaped=$(echo "$use_case" | sed 's/"/\\"/g' | sed 's/\\/\\\\/g')
+
     cat >> "$output_file" <<EOF
       {
         "name": "$agent",
         "confidence": $confidence,
         "category": "$category",
+        "use_case": "$use_case_escaped",
         "patterns_matched": $patterns_json
       }
 EOF
