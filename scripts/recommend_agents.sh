@@ -47,6 +47,10 @@ Options:
   --import FILE          Import and install agents from a profile JSON file.
   --check-updates        Check for updates to locally installed agents.
   --update-all           Update all locally installed agents to latest versions.
+  --force-refresh        Bypass cache and fetch fresh content from network.
+  --clear-cache          Remove all cached files and exit.
+  --cache-dir DIR        Specify custom cache directory location.
+  --cache-expiry SECS    Set cache expiry time in seconds (default: 86400).
   --branch NAME          Override the claude-agents branch to download from.
   --repo URL             Override the base raw URL for the claude-agents repository.
   -h, --help             Show this help message.
@@ -68,6 +72,8 @@ CHECK_UPDATES=false
 UPDATE_ALL=false
 DEBUG_CONFIDENCE=""
 SHOW_MAX_WEIGHTS=false
+FORCE_REFRESH=false
+CLEAR_CACHE_FLAG=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -120,6 +126,42 @@ while [[ $# -gt 0 ]]; do
       UPDATE_ALL=true
       shift
       ;;
+    --force-refresh)
+      FORCE_REFRESH=true
+      shift
+      ;;
+    --clear-cache)
+      CLEAR_CACHE_FLAG=true
+      shift
+      ;;
+    --cache-dir)
+      shift
+      [[ $# -gt 0 ]] || { echo "Missing value for --cache-dir" >&2; exit 1; }
+      CACHE_DIR="$1"
+      shift
+      ;;
+    --cache-dir=*)
+      CACHE_DIR="${1#*=}"
+      shift
+      ;;
+    --cache-expiry)
+      shift
+      [[ $# -gt 0 ]] || { echo "Missing value for --cache-expiry" >&2; exit 1; }
+      if ! [[ "$1" =~ ^[0-9]+$ ]]; then
+        echo "Error: --cache-expiry must be a positive number" >&2
+        exit 1
+      fi
+      CACHE_EXPIRY_SECONDS="$1"
+      shift
+      ;;
+    --cache-expiry=*)
+      CACHE_EXPIRY_SECONDS="${1#*=}"
+      if ! [[ "$CACHE_EXPIRY_SECONDS" =~ ^[0-9]+$ ]]; then
+        echo "Error: --cache-expiry must be a positive number" >&2
+        exit 1
+      fi
+      shift
+      ;;
     --min-confidence)
       shift
       [[ $# -gt 0 ]] || { echo "Missing value for --min-confidence" >&2; exit 1; }
@@ -160,11 +202,43 @@ log() {
   printf '[agent-setup] %s\n' "$*"
 }
 
+# Handle --clear-cache flag early (before other operations)
+if [[ $CLEAR_CACHE_FLAG == true ]]; then
+  # Cache directory for downloaded files (use default if not overridden)
+  CACHE_DIR="${CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/claude-agents}"
+  
+  if [[ ! -d "$CACHE_DIR" ]]; then
+    log "Cache directory does not exist: $CACHE_DIR"
+    exit 0
+  fi
+  
+  log "Clearing cache directory: $CACHE_DIR"
+  
+  # Count files before clearing
+  file_count=0
+  if [[ -n "$(ls -A "$CACHE_DIR" 2>/dev/null)" ]]; then
+    file_count=$(find "$CACHE_DIR" -type f | wc -l | xargs)
+  fi
+  
+  # Remove all files in cache directory
+  if rm -rf "${CACHE_DIR:?}"/* 2>/dev/null; then
+    if [[ $file_count -gt 0 ]]; then
+      log "Successfully cleared $file_count cached file(s)"
+    else
+      log "Cache directory was already empty"
+    fi
+    exit 0
+  else
+    echo "Error: Failed to clear cache directory: $CACHE_DIR" >&2
+    exit 1
+  fi
+fi
+
 # Enhanced error handling (Task 11)
 
 # Cache directory for downloaded files
-CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/claude-agents"
-CACHE_EXPIRY_SECONDS=$((24 * 60 * 60))  # 24 hours
+CACHE_DIR="${CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/claude-agents}"
+CACHE_EXPIRY_SECONDS="${CACHE_EXPIRY_SECONDS:-$((24 * 60 * 60))}"  # 24 hours default
 
 # Initialize cache directory
 init_cache() {
@@ -223,7 +297,9 @@ fetch_with_cache() {
   local url="$1"
   local output="$2"
   local expiry="${3:-$CACHE_EXPIRY_SECONDS}"
-  local force_refresh="${4:-false}"
+  
+  # Use global FORCE_REFRESH flag if set
+  local force_refresh="${FORCE_REFRESH:-false}"
   
   init_cache || return 1
   
@@ -240,6 +316,10 @@ fetch_with_cache() {
   fi
   
   # Fetch and cache
+  if [[ ${VERBOSE:-false} == true ]] && [[ $force_refresh == true ]]; then
+    log "Force refresh enabled, bypassing cache for $(basename "$url")"
+  fi
+  
   if fetch_with_retry "$url" "$output"; then
     cp "$output" "$cache_file" 2>/dev/null || true
     return 0
@@ -1136,20 +1216,30 @@ check_updates() {
   for agent in "${local_agents[@]}"; do
     local local_file="${AGENTS_DIR}/${agent}.md"
     local remote_url="${BASE_URL}/${agent}.md"
+    
+    # Create temporary file for remote content
+    local temp_file
+    temp_file=$(mktemp)
+    
+    # Use fetch_with_cache with 1-hour expiry for update checks
+    if fetch_with_cache "$remote_url" "$temp_file" 3600; then
+      # Compare content
+      local local_content
+      local_content=$(cat "$local_file")
+      local remote_content
+      remote_content=$(cat "$temp_file")
 
-    # Get remote file and compare with local
-    local remote_content=$(curl -fsSL "$remote_url" 2>/dev/null)
-
-    if [[ -z "$remote_content" ]]; then
+      if [[ "$remote_content" != "$local_content" ]]; then
+        updates_available+=("$agent")
+      fi
+      
+      # Clean up temporary file
+      rm -f "$temp_file"
+    else
       log "Warning: Could not fetch remote version of $agent"
+      # Clean up temporary file on failure
+      rm -f "$temp_file"
       continue
-    fi
-
-    # Compare content
-    local local_content=$(cat "$local_file")
-
-    if [[ "$remote_content" != "$local_content" ]]; then
-      updates_available+=("$agent")
     fi
   done
 
@@ -1191,22 +1281,28 @@ update_all_agents() {
   log "Checking and updating ${#local_agents[@]} agents..."
 
   local updated_count=0
+  local failed_count=0
   local backup_dir="${AGENTS_DIR}/.backup_$(date +%Y%m%d_%H%M%S)"
 
   for agent in "${local_agents[@]}"; do
     local local_file="${AGENTS_DIR}/${agent}.md"
     local remote_url="${BASE_URL}/${agent}.md"
+    local temp_file
+    temp_file=$(mktemp)
 
-    # Get remote file and compare with local
-    local remote_content=$(curl -fsSL "$remote_url" 2>/dev/null)
-
-    if [[ -z "$remote_content" ]]; then
-      log "Warning: Could not fetch remote version of $agent, skipping"
+    # Use fetch_with_retry to get remote file
+    if ! fetch_with_retry "$remote_url" "$temp_file"; then
+      log "✗ Failed to fetch remote version of $agent"
+      rm -f "$temp_file"
+      ((failed_count++))
       continue
     fi
 
     # Compare content
-    local local_content=$(cat "$local_file")
+    local local_content
+    local_content=$(cat "$local_file")
+    local remote_content
+    remote_content=$(cat "$temp_file")
 
     if [[ "$remote_content" != "$local_content" ]]; then
       # Create backup directory if needed
@@ -1214,25 +1310,48 @@ update_all_agents() {
         mkdir -p "$backup_dir"
       fi
 
-      # Backup existing file
-      cp "$local_file" "${backup_dir}/${agent}.md"
-      log "Backed up $agent to ${backup_dir}/${agent}.md"
+      # Backup existing file before update
+      if ! cp "$local_file" "${backup_dir}/${agent}.md"; then
+        log "✗ Failed to create backup for $agent"
+        rm -f "$temp_file"
+        ((failed_count++))
+        continue
+      fi
 
-      # Download updated version
       log "Updating $agent..."
-      echo "$remote_content" > "$local_file"
-      ((updated_count++))
+      
+      # Update the file
+      if cp "$temp_file" "$local_file"; then
+        log "✓ Updated $agent"
+        ((updated_count++))
+      else
+        log "✗ Failed to update $agent"
+        # Rollback: restore from backup
+        if [[ -f "${backup_dir}/${agent}.md" ]]; then
+          cp "${backup_dir}/${agent}.md" "$local_file"
+          log "Restored $agent from backup"
+        fi
+        ((failed_count++))
+      fi
     fi
+
+    # Clean up temporary file
+    rm -f "$temp_file"
   done
 
-  if [[ $updated_count -eq 0 ]]; then
+  # Summary
+  log ""
+  if [[ $updated_count -eq 0 ]] && [[ $failed_count -eq 0 ]]; then
     log "All agents were already up to date ✓"
   else
-    log "Updated $updated_count agent(s)"
+    log "Update complete: $updated_count updated, $failed_count failed"
     if [[ -d "$backup_dir" ]]; then
       log "Backups saved to $backup_dir"
     fi
   fi
+
+  # Return success if no failures
+  [[ $failed_count -eq 0 ]]
 }
 
 # Parse AGENTS_REGISTRY.md to extract agent metadata
@@ -1244,8 +1363,12 @@ parse_agent_registry() {
     log "Agent registry not found locally, attempting to fetch..."
     mkdir -p "$AGENTS_DIR"
     local registry_url="${BASE_URL}/AGENTS_REGISTRY.md"
-    if ! curl -fsSL "$registry_url" -o "$registry_file" 2>/dev/null; then
-      log "Warning: Could not fetch agent registry. Using built-in metadata."
+    
+    # Use fetch_with_cache with 1-hour cache expiry
+    if fetch_with_cache "$registry_url" "$registry_file" 3600; then
+      log "✓ Successfully fetched agent registry"
+    else
+      log "✗ Failed to fetch agent registry. Using built-in metadata."
       return 1
     fi
   fi

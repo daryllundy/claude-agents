@@ -1,71 +1,79 @@
 # Implementation Plan
 
-- [ ] 1. Enhance fetch_with_retry function
+- [x] 1. Enhance fetch_with_retry function
   - Add optional max_attempts parameter (default 3)
   - Add optional timeout parameter (default 30 seconds)
   - Implement verbose logging for each attempt
   - Add detailed troubleshooting guidance on final failure
   - Improve HTTP status code diagnostics
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.1, 2.2, 2.4_
+  - _Status: COMPLETED - Function exists at line 252 with all required features_
 
-- [ ] 2. Create cache directory initialization
+- [x] 2. Create cache directory initialization
   - Implement init_cache() function to create cache directory
   - Use XDG_CACHE_HOME or fallback to ~/.cache
   - Add error handling for directory creation failures
   - Return success/failure status
   - _Requirements: 3.1_
+  - _Status: COMPLETED - Function exists at line 177_
 
-- [ ] 3. Implement cache path generation
+- [x] 3. Implement cache path generation
   - Create get_cache_path() function to generate cache file paths
   - Use SHA256 hash of URL as cache filename
   - Return full path to cache file
   - _Requirements: 3.1_
+  - _Status: COMPLETED - Function exists at line 189 (uses md5/md5sum/cksum fallback)_
 
-- [ ] 4. Implement cache freshness checking
+- [x] 4. Implement cache freshness checking
   - Create is_cache_fresh() function to check file age
   - Support configurable expiry time in seconds
   - Handle platform differences (macOS vs Linux stat commands)
   - Return true if cache is fresh, false otherwise
   - _Requirements: 3.2, 3.3_
+  - _Status: COMPLETED - Function exists at line 205_
 
-- [ ] 5. Implement fetch_with_cache function
+- [x] 5. Implement fetch_with_cache function
   - Create function that checks cache before fetching
   - Implement cache freshness validation
   - Fall back to fetch_with_retry on cache miss or stale data
   - Store fetched content in cache on success
   - Support force refresh flag to bypass cache
   - _Requirements: 3.1, 3.2, 3.3, 3.4_
+  - _Status: COMPLETED - Function exists at line 228_
 
-- [ ] 6. Add cache management functions
+- [x] 6. Add cache management functions
   - Implement clear_cache() function to remove all cached files
   - Add logging for cache operations
   - Handle missing cache directory gracefully
   - _Requirements: 3.4_
 
-- [ ] 7. Refactor check_updates to use fetch_with_cache
+- [x] 7. Refactor check_updates to use fetch_with_cache
   - Replace direct curl calls with fetch_with_cache
   - Use 1-hour cache expiry for update checks
   - Add error handling for failed fetches
   - Log warnings for agents that fail to check
   - Clean up temporary files properly
   - _Requirements: 1.1, 1.2, 1.3, 2.1, 2.2, 3.1_
+  - _Note: Current implementation at line 1119 uses direct curl calls_
 
-- [ ] 8. Refactor update_all_agents to use fetch_with_retry
+- [x] 8. Refactor update_all_agents to use fetch_with_retry
   - Replace direct curl calls with fetch_with_retry
   - Implement backup creation before updates
   - Add rollback on fetch failure
   - Track updated and failed counts
   - Provide summary of update results
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.1, 2.2_
+  - _Note: Current implementation at line 1169 uses direct curl calls and has backup logic_
 
-- [ ] 9. Create fetch_registry function
-  - Implement function to fetch AGENTS_REGISTRY.md
-  - Use fetch_with_cache with 1-hour expiry
+- [x] 9. Refactor parse_agent_registry to use fetch_with_cache
+  - Update function to use fetch_with_cache when registry doesn't exist locally
+  - Use 1-hour cache expiry for registry fetches
   - Add logging for success/failure
   - Return appropriate exit code
   - _Requirements: 1.1, 2.1_
+  - _Note: Current implementation at line 1227 uses direct curl call_
 
-- [ ] 10. Add command-line flags for cache control
+- [x] 10. Add command-line flags for cache control
   - Implement --force-refresh flag to bypass cache
   - Add --clear-cache flag to remove cached files
   - Implement --cache-dir flag to specify custom cache location
@@ -73,12 +81,13 @@
   - Parse flags in main script initialization
   - _Requirements: 3.4_
 
-- [ ] 11. Add cache configuration variables
+- [x] 11. Add cache configuration variables
   - Define CACHE_DIR with XDG_CACHE_HOME fallback
   - Set CACHE_EXPIRY_SECONDS default (24 hours)
   - Add FORCE_REFRESH flag (default false)
   - Document configuration options
   - _Requirements: 3.1, 3.2, 3.4_
+  - _Status: COMPLETED - Variables defined at lines 169-171_
 
 - [ ] 12. Create unit tests for fetch_with_retry
   - Write test for successful first attempt
