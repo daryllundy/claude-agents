@@ -1,0 +1,72 @@
+version: "1.0"
+category: "Productivity"
+
+agents:
+  - name: "scaffolding-specialist"
+    description: "Code generation, templates, project scaffolding"
+    category: "Productivity"
+    patterns:
+      - type: "path"
+        match: "scripts/scaffold"
+        weight: 20
+      - type: "path"
+        match: "templates"
+        weight: 15
+      - type: "content"
+        match: "plopfile"
+        weight: 20
+      - type: "content"
+        match: "scaffold"
+        weight: 15
+      - type: "file"
+        match: "generator.js"
+        weight: 15
+      - type: "path"
+        match: "blueprints"
+        weight: 15
+
+  - name: "documentation-specialist"
+    description: "Documentation, technical writing, API docs"
+    category: "Productivity"
+    patterns:
+      - type: "path"
+        match: "docs"
+        weight: 15
+      - type: "file"
+        match: "mkdocs.yml"
+        weight: 20
+      - type: "file"
+        match: "docusaurus.config.js"
+        weight: 20
+      - type: "file"
+        match: "README.md"
+        weight: 5
+      - type: "path"
+        match: "documentation"
+        weight: 15
+      - type: "file"
+        match: ".readthedocs.yml"
+        weight: 15
+
+  - name: "debugging-specialist"
+    description: "Debugging tools, error tracking, logging"
+    category: "Productivity"
+    patterns:
+      - type: "content"
+        match: "sentry"
+        weight: 15
+      - type: "content"
+        match: "bugsnag"
+        weight: 15
+      - type: "content"
+        match: "logger.error"
+        weight: 10
+      - type: "content"
+        match: "console.error"
+        weight: 5
+      - type: "content"
+        match: "debugger"
+        weight: 10
+      - type: "file"
+        match: ".sentryclirc"
+        weight: 15

@@ -1,0 +1,84 @@
+version: "1.0"
+category: "Development"
+
+agents:
+  - name: "frontend-specialist"
+    description: "Frontend frameworks, components, UI development"
+    category: "Development"
+    patterns:
+      - type: "content"
+        match: "react"
+        weight: 15
+      - type: "content"
+        match: "vue"
+        weight: 15
+      - type: "content"
+        match: "angular"
+        weight: 15
+      - type: "content"
+        match: "next"
+        weight: 15
+      - type: "path"
+        match: "src/components"
+        weight: 15
+      - type: "path"
+        match: "components"
+        weight: 10
+      - type: "path"
+        match: "frontend"
+        weight: 10
+      - type: "file"
+        match: "package.json"
+        weight: 5
+
+  - name: "mobile-specialist"
+    description: "Mobile app development, React Native, Flutter"
+    category: "Development"
+    patterns:
+      - type: "path"
+        match: "android"
+        weight: 20
+      - type: "path"
+        match: "ios"
+        weight: 20
+      - type: "file"
+        match: "pubspec.yaml"
+        weight: 20
+      - type: "content"
+        match: "ReactNative"
+        weight: 20
+      - type: "content"
+        match: "Flutter"
+        weight: 15
+      - type: "file"
+        match: "Podfile"
+        weight: 15
+      - type: "file"
+        match: "build.gradle"
+        weight: 10
+
+  - name: "database-specialist"
+    description: "Database design, migrations, queries, ORMs"
+    category: "Development"
+    patterns:
+      - type: "file"
+        match: "schema.prisma"
+        weight: 20
+      - type: "path"
+        match: "migrations"
+        weight: 15
+      - type: "path"
+        match: "db/migrate"
+        weight: 15
+      - type: "file"
+        match: "*.sql"
+        weight: 10
+      - type: "content"
+        match: "CREATE TABLE"
+        weight: 15
+      - type: "content"
+        match: "SELECT"
+        weight: 5
+      - type: "content"
+        match: "prisma"
+        weight: 10

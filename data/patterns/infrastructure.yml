@@ -1,0 +1,385 @@
+version: "1.0"
+category: "Infrastructure"
+
+agents:
+  - name: "aws-specialist"
+    description: "AWS cloud services, architecture, CloudFormation, CDK"
+    category: "Infrastructure (Cloud)"
+    use_case: "Designing AWS infrastructure, optimizing CloudFormation templates, implementing AWS CDK constructs, and architecting cloud-native solutions"
+    patterns:
+      - type: "file"
+        match: "*.tf"
+        weight: 10
+      - type: "content"
+        match: 'provider "aws"'
+        weight: 20
+      - type: "content"
+        match: "aws_"
+        weight: 15
+      - type: "file"
+        match: "cloudformation.yaml"
+        weight: 15
+      - type: "file"
+        match: "cloudformation.yml"
+        weight: 15
+      - type: "file"
+        match: "cdk.json"
+        weight: 15
+      - type: "file"
+        match: "cdk.context.json"
+        weight: 15
+      - type: "path"
+        match: ".aws"
+        weight: 10
+      - type: "path"
+        match: "cloudformation"
+        weight: 15
+      - type: "content"
+        match: "AWS::CloudFormation"
+        weight: 15
+      - type: "content"
+        match: "aws-cdk"
+        weight: 10
+      - type: "content"
+        match: "@aws-cdk"
+        weight: 10
+
+  - name: "azure-specialist"
+    description: "Azure cloud services, ARM templates, Bicep"
+    category: "Infrastructure (Cloud)"
+    patterns:
+      - type: "file"
+        match: "*.bicep"
+        weight: 20
+      - type: "file"
+        match: "azuredeploy.json"
+        weight: 15
+      - type: "file"
+        match: "azuredeploy.parameters.json"
+        weight: 10
+      - type: "content"
+        match: "deploymentTemplate"
+        weight: 15
+      - type: "content"
+        match: "$schema.*deploymentTemplate"
+        weight: 15
+      - type: "file"
+        match: "azure-pipelines.yml"
+        weight: 15
+      - type: "file"
+        match: "azure-pipelines.yaml"
+        weight: 15
+      - type: "content"
+        match: 'provider "azurerm"'
+        weight: 20
+      - type: "content"
+        match: "azurerm_"
+        weight: 15
+      - type: "content"
+        match: "Microsoft.Compute"
+        weight: 10
+      - type: "content"
+        match: "Microsoft.Resources"
+        weight: 10
+      - type: "path"
+        match: ".azure"
+        weight: 10
+
+  - name: "gcp-specialist"
+    description: "Google Cloud Platform services, Deployment Manager"
+    category: "Infrastructure (Cloud)"
+    patterns:
+      - type: "file"
+        match: "app.yaml"
+        weight: 15
+      - type: "path"
+        match: ".config/gcloud"
+        weight: 10
+      - type: "content"
+        match: 'provider "google"'
+        weight: 20
+      - type: "content"
+        match: "google_"
+        weight: 15
+      - type: "file"
+        match: "deployment-manager.yaml"
+        weight: 15
+      - type: "file"
+        match: "*.jinja"
+        weight: 10
+      - type: "path"
+        match: "deployment"
+        weight: 10
+      - type: "content"
+        match: "gcp.googleapis.com"
+        weight: 10
+      - type: "content"
+        match: "googleapis.com"
+        weight: 10
+      - type: "content"
+        match: "gcloud"
+        weight: 10
+      - type: "file"
+        match: "cloudbuild.yaml"
+        weight: 15
+
+  - name: "terraform-specialist"
+    description: "Terraform configuration, modules, state management"
+    category: "Infrastructure (IaC)"
+    use_case: "Writing Terraform configurations, creating reusable modules, managing state files, and implementing infrastructure as code best practices"
+    patterns:
+      - type: "file"
+        match: "*.tf"
+        weight: 20
+      - type: "file"
+        match: "*.tfvars"
+        weight: 15
+      - type: "file"
+        match: "terraform.tfstate"
+        weight: 25
+      - type: "file"
+        match: "terraform.tfstate.backup"
+        weight: 20
+      - type: "file"
+        match: ".terraform.lock.hcl"
+        weight: 15
+      - type: "path"
+        match: ".terraform"
+        weight: 15
+      - type: "content"
+        match: "terraform"
+        weight: 10
+      - type: "content"
+        match: "module"
+        weight: 10
+      - type: "content"
+        match: "resource"
+        weight: 5
+
+  - name: "ansible-specialist"
+    description: "Ansible automation, playbooks, roles"
+    category: "Infrastructure (IaC)"
+    patterns:
+      - type: "file"
+        match: "ansible.cfg"
+        weight: 20
+      - type: "file"
+        match: "playbook.yml"
+        weight: 15
+      - type: "file"
+        match: "playbook.yaml"
+        weight: 15
+      - type: "path"
+        match: "roles"
+        weight: 15
+      - type: "path"
+        match: "inventory"
+        weight: 10
+      - type: "file"
+        match: "requirements.yml"
+        weight: 10
+      - type: "content"
+        match: "ansible.builtin"
+        weight: 15
+      - type: "content"
+        match: "hosts:"
+        weight: 10
+      - type: "content"
+        match: "tasks:"
+        weight: 10
+
+  - name: "kubernetes-specialist"
+    description: "Kubernetes orchestration, Helm charts, manifests"
+    category: "Infrastructure (Platform)"
+    use_case: "Deploying applications to Kubernetes, creating Helm charts, writing manifests, troubleshooting cluster issues, and implementing K8s best practices"
+    patterns:
+      - type: "path"
+        match: "k8s"
+        weight: 20
+      - type: "path"
+        match: "kubernetes"
+        weight: 20
+      - type: "file"
+        match: "Chart.yaml"
+        weight: 20
+      - type: "file"
+        match: "values.yaml"
+        weight: 15
+      - type: "file"
+        match: "kustomization.yaml"
+        weight: 20
+      - type: "content"
+        match: "apiVersion"
+        weight: 10
+      - type: "content"
+        match: "kind: Deployment"
+        weight: 15
+      - type: "content"
+        match: "kind: Service"
+        weight: 10
+      - type: "content"
+        match: "kind: StatefulSet"
+        weight: 10
+      - type: "content"
+        match: "kubectl"
+        weight: 10
+      - type: "file"
+        match: "skaffold.yaml"
+        weight: 15
+
+  - name: "docker-specialist"
+    description: "Docker containers, images, compose"
+    category: "Infrastructure (Containers)"
+    patterns:
+      - type: "file"
+        match: "Dockerfile"
+        weight: 25
+      - type: "file"
+        match: "docker-compose.yml"
+        weight: 20
+      - type: "file"
+        match: "docker-compose.yaml"
+        weight: 20
+      - type: "file"
+        match: ".dockerignore"
+        weight: 10
+      - type: "file"
+        match: "Containerfile"
+        weight: 20
+      - type: "content"
+        match: "FROM"
+        weight: 10
+
+  - name: "monitoring-specialist"
+    description: "Monitoring, metrics, logging, alerting"
+    category: "Infrastructure (Monitoring)"
+    patterns:
+      - type: "file"
+        match: "prometheus.yml"
+        weight: 20
+      - type: "file"
+        match: "prometheus.yaml"
+        weight: 20
+      - type: "path"
+        match: "prometheus"
+        weight: 15
+      - type: "path"
+        match: "grafana"
+        weight: 15
+      - type: "file"
+        match: "grafana.ini"
+        weight: 15
+      - type: "file"
+        match: "elasticsearch.yml"
+        weight: 15
+      - type: "file"
+        match: "logstash.conf"
+        weight: 15
+      - type: "file"
+        match: "kibana.yml"
+        weight: 15
+      - type: "content"
+        match: "metrics"
+        weight: 10
+      - type: "content"
+        match: "observability"
+        weight: 10
+      - type: "content"
+        match: "alertmanager"
+        weight: 10
+      - type: "path"
+        match: "monitoring"
+        weight: 15
+
+  - name: "observability-specialist"
+    description: "Distributed tracing, metrics, observability platforms"
+    category: "Infrastructure (Monitoring)"
+    patterns:
+      - type: "content"
+        match: "prometheus"
+        weight: 15
+      - type: "content"
+        match: "grafana"
+        weight: 15
+      - type: "content"
+        match: "opentelemetry"
+        weight: 20
+      - type: "content"
+        match: "jaeger"
+        weight: 15
+      - type: "content"
+        match: "zipkin"
+        weight: 15
+      - type: "path"
+        match: "monitoring"
+        weight: 10
+
+  - name: "cicd-specialist"
+    description: "CI/CD pipelines, automation, deployment"
+    category: "Infrastructure (CI/CD)"
+    patterns:
+      - type: "path"
+        match: ".github/workflows"
+        weight: 20
+      - type: "file"
+        match: ".gitlab-ci.yml"
+        weight: 20
+      - type: "file"
+        match: "Jenkinsfile"
+        weight: 20
+      - type: "path"
+        match: ".circleci"
+        weight: 20
+      - type: "file"
+        match: "circle.yml"
+        weight: 15
+      - type: "file"
+        match: "azure-pipelines.yml"
+        weight: 20
+      - type: "file"
+        match: ".travis.yml"
+        weight: 15
+      - type: "file"
+        match: "buildspec.yml"
+        weight: 15
+      - type: "content"
+        match: "pipeline"
+        weight: 10
+      - type: "content"
+        match: "ci/cd"
+        weight: 10
+      - type: "content"
+        match: "continuous integration"
+        weight: 10
+
+  - name: "devops-orchestrator"
+    description: "Multi-tool DevOps coordination and orchestration"
+    category: "Infrastructure (Orchestration)"
+    patterns:
+      - type: "path"
+        match: ".github/workflows"
+        weight: 5
+      - type: "path"
+        match: ".gitlab-ci"
+        weight: 5
+      - type: "file"
+        match: "Jenkinsfile"
+        weight: 5
+      - type: "path"
+        match: "terraform"
+        weight: 5
+      - type: "file"
+        match: "*.tf"
+        weight: 5
+      - type: "path"
+        match: "k8s"
+        weight: 5
+      - type: "path"
+        match: "kubernetes"
+        weight: 5
+      - type: "file"
+        match: "prometheus.yml"
+        weight: 5
+      - type: "path"
+        match: "ansible"
+        weight: 5

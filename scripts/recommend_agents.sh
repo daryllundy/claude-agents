@@ -53,11 +53,13 @@ Options:
   --cache-expiry SECS    Set cache expiry time in seconds (default: 86400).
   --branch NAME          Override the claude-agents branch to download from.
   --repo URL             Override the base raw URL for the claude-agents repository.
+  --patterns-dir DIR     Specify custom pattern directory location.
   -h, --help             Show this help message.
 
 Environment variables:
-  CLAUDE_AGENTS_BRANCH  Override the branch (default: main).
-  CLAUDE_AGENTS_REPO    Override the raw content base URL.
+  CLAUDE_AGENTS_BRANCH    Override the branch (default: main).
+  CLAUDE_AGENTS_REPO      Override the raw content base URL.
+  AGENT_PATTERNS_DIR      Override the pattern directory location.
 
 USAGE
 }
@@ -74,6 +76,7 @@ DEBUG_CONFIDENCE=""
 SHOW_MAX_WEIGHTS=false
 FORCE_REFRESH=false
 CLEAR_CACHE_FLAG=false
+PATTERNS_DIR=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -184,6 +187,16 @@ while [[ $# -gt 0 ]]; do
       [[ $# -gt 0 ]] || { echo "Missing value for --repo" >&2; exit 1; }
       CLAUDE_AGENTS_REPO="$1"
       BASE_URL="${CLAUDE_AGENTS_REPO}/${CLAUDE_AGENTS_BRANCH}/.claude/agents"
+      shift
+      ;;
+    --patterns-dir)
+      shift
+      [[ $# -gt 0 ]] || { echo "Missing value for --patterns-dir" >&2; exit 1; }
+      PATTERNS_DIR="$1"
+      shift
+      ;;
+    --patterns-dir=*)
+      PATTERNS_DIR="${1#*=}"
       shift
       ;;
     -h|--help)
@@ -592,6 +605,32 @@ display_categorized_results() {
   echo ""
 }
 
+# Task 16: Performance optimization with caching
+declare -A USE_CASE_WRAP_CACHE
+
+# Format use case with caching
+format_use_case_cached() {
+  local text="$1"
+  local width="${2:-60}"
+  local indent="${3:-0}"
+
+  # Generate cache key
+  local cache_key="${text}:${width}:${indent}"
+
+  # Check if cached result exists
+  if [[ -n "${USE_CASE_WRAP_CACHE[$cache_key]:-}" ]]; then
+    echo "${USE_CASE_WRAP_CACHE[$cache_key]}"
+    return 0
+  fi
+
+  # Format and cache the result
+  local formatted
+  formatted=$(format_use_case "$text" "$width" "$indent")
+  USE_CASE_WRAP_CACHE[$cache_key]="$formatted"
+
+  echo "$formatted"
+}
+
 # UI Rendering functions (Task 2)
 
 # Get terminal width
@@ -653,11 +692,45 @@ get_use_case_safe() {
   fi
 }
 
+# Task 10: Validate use cases for all agents
+# Returns: 0 if all agents have use cases, 1 if some are missing
+validate_use_cases() {
+  local missing_count=0
+  local total_count=0
+  local -a missing_agents=()
+
+  # Check all agents that have patterns
+  for agent in "${!AGENT_PATTERNS[@]}"; do
+    ((total_count++))
+    local use_case="${AGENT_USE_CASES[$agent]:-}"
+
+    if [[ -z "$use_case" ]]; then
+      ((missing_count++))
+      missing_agents+=("$agent")
+    fi
+  done
+
+  if [[ $missing_count -gt 0 ]]; then
+    if [[ ${VERBOSE:-false} == true ]]; then
+      log "Warning: $missing_count of $total_count agents are missing use case metadata:"
+      for agent in "${missing_agents[@]}"; do
+        log "  - $agent"
+      done
+    fi
+    return 1
+  else
+    if [[ ${VERBOSE:-false} == true ]]; then
+      log "✓ All $total_count agents have use case metadata"
+    fi
+    return 0
+  fi
+}
+
 # Render category header
 render_category_header() {
   local category="$1"
   local count="$2"
-  
+
   echo ""
   echo "━━ $category ($count agent(s)) ━━"
   echo ""
@@ -1413,7 +1486,558 @@ parse_agent_registry() {
   return 0
 }
 
-# Parse YAML pattern file and populate AGENT_PATTERNS
+# Check for YAML parser availability
+# Returns: "yq", "python3", or exits with error
+check_yaml_parser() {
+  if command -v yq &> /dev/null; then
+    echo "yq"
+    return 0
+  elif command -v python3 &> /dev/null; then
+    # Check if PyYAML is available
+    if python3 -c "import yaml" &> /dev/null; then
+      echo "python3"
+      return 0
+    else
+      echo "Error: python3 found but PyYAML module is not installed" >&2
+      echo "Install with: pip3 install pyyaml" >&2
+      return 1
+    fi
+  else
+    echo "Error: No YAML parser found. Install yq or python3 with PyYAML" >&2
+    echo "Install with: brew install yq  (or)  pip3 install pyyaml" >&2
+    return 1
+  fi
+}
+
+# Parse YAML using yq
+# Args: $1 - YAML file path
+# Returns: JSON output on stdout
+parse_yaml_with_yq() {
+  local file="$1"
+  
+  if [[ ! -f "$file" ]]; then
+    echo "Error: File not found: $file" >&2
+    return 1
+  fi
+  
+  # Use yq to convert YAML to JSON
+  if ! yq eval -o=json "$file" 2>/dev/null; then
+    echo "Error: Failed to parse YAML file with yq: $file" >&2
+    return 1
+  fi
+  
+  return 0
+}
+
+# Parse YAML using Python
+# Args: $1 - YAML file path
+# Returns: JSON output on stdout
+parse_yaml_with_python() {
+  local file="$1"
+  
+  if [[ ! -f "$file" ]]; then
+    echo "Error: File not found: $file" >&2
+    return 1
+  fi
+  
+  # Use Python with PyYAML to convert YAML to JSON
+  python3 -c "
+import yaml
+import json
+import sys
+
+try:
+    with open('$file', 'r') as f:
+        data = yaml.safe_load(f)
+        if data is None:
+            print('Error: Empty or invalid YAML file', file=sys.stderr)
+            sys.exit(1)
+        print(json.dumps(data))
+except yaml.YAMLError as e:
+    print(f'Error: YAML parsing failed: {e}', file=sys.stderr)
+    sys.exit(1)
+except Exception as e:
+    print(f'Error: Failed to parse YAML file: {e}', file=sys.stderr)
+    sys.exit(1)
+"
+  
+  return $?
+}
+
+# Parse YAML file to JSON (wrapper function)
+# Args: $1 - YAML file path
+# Returns: JSON output on stdout
+parse_yaml() {
+  local file="$1"
+  local parser
+  
+  # Detect available parser
+  parser=$(check_yaml_parser) || return 1
+  
+  # Use appropriate parser
+  case "$parser" in
+    yq)
+      parse_yaml_with_yq "$file"
+      ;;
+    python3)
+      parse_yaml_with_python "$file"
+      ;;
+    *)
+      echo "Error: Unknown parser: $parser" >&2
+      return 1
+      ;;
+  esac
+}
+
+# Task 10: Check dependencies for pattern loading
+# Returns: 0 if all dependencies available, 1 if missing dependencies
+check_dependencies() {
+  local missing_deps=()
+  local platform=$(uname -s)
+
+  # Check for jq (required for schema validation and JSON parsing)
+  if ! command -v jq &> /dev/null; then
+    missing_deps+=("jq")
+  fi
+
+  # Check for YAML parser (yq or python3 with PyYAML)
+  local yaml_parser_available=false
+
+  if command -v yq &> /dev/null; then
+    yaml_parser_available=true
+  elif command -v python3 &> /dev/null; then
+    if python3 -c "import yaml" &> /dev/null; then
+      yaml_parser_available=true
+    fi
+  fi
+
+  if [[ $yaml_parser_available == false ]]; then
+    missing_deps+=("yaml-parser")
+  fi
+
+  # If dependencies are missing, show installation instructions
+  if [[ ${#missing_deps[@]} -gt 0 ]]; then
+    echo "Error: Missing required dependencies for pattern loading" >&2
+    echo "" >&2
+
+    for dep in "${missing_deps[@]}"; do
+      case "$dep" in
+        jq)
+          echo "  • jq - Required for JSON processing and schema validation" >&2
+          echo "" >&2
+          case "$platform" in
+            Darwin)
+              echo "    Install with: brew install jq" >&2
+              ;;
+            Linux)
+              echo "    Install with: sudo apt-get install jq  (Debian/Ubuntu)" >&2
+              echo "                  sudo yum install jq      (RHEL/CentOS)" >&2
+              ;;
+            *)
+              echo "    Install from: https://stedolan.github.io/jq/download/" >&2
+              ;;
+          esac
+          echo "" >&2
+          ;;
+        yaml-parser)
+          echo "  • YAML parser - Required for parsing pattern files" >&2
+          echo "" >&2
+          echo "    Option 1: Install yq" >&2
+          case "$platform" in
+            Darwin)
+              echo "      brew install yq" >&2
+              ;;
+            Linux)
+              echo "      Download from: https://github.com/mikefarah/yq/releases" >&2
+              ;;
+            *)
+              echo "      Download from: https://github.com/mikefarah/yq/releases" >&2
+              ;;
+          esac
+          echo "" >&2
+          echo "    Option 2: Install Python 3 with PyYAML" >&2
+          echo "      pip3 install pyyaml" >&2
+          echo "" >&2
+          ;;
+      esac
+    done
+
+    return 1
+  fi
+
+  return 0
+}
+
+# Task 9: Setup patterns directory with priority resolution
+# Priority: CLI flag > environment variable > default location
+# Returns: patterns directory path on stdout, exits on error if directory invalid
+setup_patterns_directory() {
+  local patterns_dir=""
+  local script_dir
+  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+  # Priority 1: CLI flag
+  if [[ -n "${PATTERNS_DIR}" ]]; then
+    patterns_dir="$PATTERNS_DIR"
+    if [[ ! -d "$patterns_dir" ]]; then
+      echo "Error: Pattern directory specified via --patterns-dir does not exist: $patterns_dir" >&2
+      echo "Please create the directory or specify a valid path" >&2
+      return 1
+    fi
+    if [[ ${VERBOSE:-false} == true ]]; then
+      log "Using pattern directory from CLI: $patterns_dir" >&2
+    fi
+  # Priority 2: Environment variable
+  elif [[ -n "${AGENT_PATTERNS_DIR:-}" ]]; then
+    patterns_dir="$AGENT_PATTERNS_DIR"
+    if [[ ! -d "$patterns_dir" ]]; then
+      echo "Error: Pattern directory specified via AGENT_PATTERNS_DIR does not exist: $patterns_dir" >&2
+      echo "Please create the directory or set a valid path" >&2
+      return 1
+    fi
+    if [[ ${VERBOSE:-false} == true ]]; then
+      log "Using pattern directory from environment: $patterns_dir" >&2
+    fi
+  # Priority 3: Default locations
+  else
+    # Try multiple default locations
+    for candidate in \
+      "${script_dir}/../data/patterns" \
+      "${script_dir}/data/patterns" \
+      "data/patterns" \
+      ".claude/patterns"
+    do
+      if [[ -d "$candidate" ]]; then
+        patterns_dir="$candidate"
+        break
+      fi
+    done
+
+    if [[ -z "$patterns_dir" ]]; then
+      # No default directory found
+      if [[ ${VERBOSE:-false} == true ]]; then
+        log "No pattern directory found in default locations" >&2
+      fi
+      return 1
+    fi
+
+    if [[ ${VERBOSE:-false} == true ]]; then
+      log "Using default pattern directory: $patterns_dir" >&2
+    fi
+  fi
+
+  echo "$patterns_dir"
+  return 0
+}
+
+# Task 5: Discover pattern files in directory
+# Args: $1 - patterns directory path
+# Returns: List of YAML files (one per line) on stdout
+discover_pattern_files() {
+  local patterns_dir="$1"
+
+  if [[ ! -d "$patterns_dir" ]]; then
+    echo "Error: Pattern directory not found: $patterns_dir" >&2
+    return 1
+  fi
+
+  # Find all .yml and .yaml files in the patterns directory
+  local -a pattern_files=()
+
+  while IFS= read -r file; do
+    [[ -n "$file" ]] && pattern_files+=("$file")
+  done < <(find "$patterns_dir" -maxdepth 1 -type f \( -name "*.yml" -o -name "*.yaml" \) 2>/dev/null | sort)
+
+  if [[ ${#pattern_files[@]} -eq 0 ]]; then
+    if [[ ${VERBOSE:-false} == true ]]; then
+      log "No pattern files found in $patterns_dir" >&2
+    fi
+    return 1
+  fi
+
+  if [[ ${VERBOSE:-false} == true ]]; then
+    log "Discovered ${#pattern_files[@]} pattern file(s) in $patterns_dir" >&2
+  fi
+
+  # Output files one per line
+  printf '%s\n' "${pattern_files[@]}"
+  return 0
+}
+
+# Task 6: Validate pattern schema using jq
+# Args: $1 - JSON string to validate
+# Returns: 0 if valid, 1 if invalid
+validate_pattern_schema() {
+  local json_data="$1"
+
+  # Check if jq is available
+  if ! command -v jq &> /dev/null; then
+    echo "Error: jq is required for schema validation but not found" >&2
+    return 1
+  fi
+
+  # Validate top-level structure
+  if ! echo "$json_data" | jq -e '.version' &> /dev/null; then
+    echo "Error: Missing required field 'version'" >&2
+    return 1
+  fi
+
+  if ! echo "$json_data" | jq -e '.agents' &> /dev/null; then
+    echo "Error: Missing required field 'agents'" >&2
+    return 1
+  fi
+
+  # Validate agents is an array
+  if ! echo "$json_data" | jq -e '.agents | type == "array"' &> /dev/null; then
+    echo "Error: Field 'agents' must be an array" >&2
+    return 1
+  fi
+
+  # Validate each agent has required fields
+  local agent_count
+  agent_count=$(echo "$json_data" | jq '.agents | length')
+
+  for ((i=0; i<agent_count; i++)); do
+    # Check for name field
+    if ! echo "$json_data" | jq -e ".agents[$i].name" &> /dev/null; then
+      echo "Error: Agent at index $i missing required field 'name'" >&2
+      return 1
+    fi
+
+    # Check for patterns field
+    if ! echo "$json_data" | jq -e ".agents[$i].patterns" &> /dev/null; then
+      local agent_name
+      agent_name=$(echo "$json_data" | jq -r ".agents[$i].name")
+      echo "Error: Agent '$agent_name' missing required field 'patterns'" >&2
+      return 1
+    fi
+
+    # Validate patterns is an array
+    if ! echo "$json_data" | jq -e ".agents[$i].patterns | type == \"array\"" &> /dev/null; then
+      local agent_name
+      agent_name=$(echo "$json_data" | jq -r ".agents[$i].name")
+      echo "Error: Agent '$agent_name' field 'patterns' must be an array" >&2
+      return 1
+    fi
+
+    # Validate each pattern
+    local pattern_count
+    pattern_count=$(echo "$json_data" | jq ".agents[$i].patterns | length")
+
+    for ((j=0; j<pattern_count; j++)); do
+      # Check pattern has required fields
+      if ! echo "$json_data" | jq -e ".agents[$i].patterns[$j].type" &> /dev/null; then
+        local agent_name
+        agent_name=$(echo "$json_data" | jq -r ".agents[$i].name")
+        echo "Error: Agent '$agent_name' pattern at index $j missing required field 'type'" >&2
+        return 1
+      fi
+
+      if ! echo "$json_data" | jq -e ".agents[$i].patterns[$j].match" &> /dev/null; then
+        local agent_name
+        agent_name=$(echo "$json_data" | jq -r ".agents[$i].name")
+        echo "Error: Agent '$agent_name' pattern at index $j missing required field 'match'" >&2
+        return 1
+      fi
+
+      if ! echo "$json_data" | jq -e ".agents[$i].patterns[$j].weight" &> /dev/null; then
+        local agent_name
+        agent_name=$(echo "$json_data" | jq -r ".agents[$i].name")
+        echo "Error: Agent '$agent_name' pattern at index $j missing required field 'weight'" >&2
+        return 1
+      fi
+
+      # Validate pattern type
+      local pattern_type
+      pattern_type=$(echo "$json_data" | jq -r ".agents[$i].patterns[$j].type")
+
+      if [[ "$pattern_type" != "file" ]] && [[ "$pattern_type" != "path" ]] && [[ "$pattern_type" != "content" ]]; then
+        local agent_name
+        agent_name=$(echo "$json_data" | jq -r ".agents[$i].name")
+        echo "Error: Agent '$agent_name' pattern at index $j has invalid type '$pattern_type' (must be file, path, or content)" >&2
+        return 1
+      fi
+
+      # Validate weight is a number
+      if ! echo "$json_data" | jq -e ".agents[$i].patterns[$j].weight | type == \"number\"" &> /dev/null; then
+        local agent_name
+        agent_name=$(echo "$json_data" | jq -r ".agents[$i].name")
+        echo "Error: Agent '$agent_name' pattern at index $j has non-numeric weight" >&2
+        return 1
+      fi
+    done
+  done
+
+  return 0
+}
+
+# Task 7: Load pattern file and populate data structures
+# Args: $1 - pattern file path
+# Returns: 0 on success, 1 on failure
+load_pattern_file() {
+  local pattern_file="$1"
+
+  if [[ ! -f "$pattern_file" ]]; then
+    echo "Error: Pattern file not found: $pattern_file" >&2
+    return 1
+  fi
+
+  if [[ ${VERBOSE:-false} == true ]]; then
+    log "Loading pattern file: $(basename "$pattern_file")"
+  fi
+
+  # Parse YAML to JSON
+  local json_data
+  if ! json_data=$(parse_yaml "$pattern_file"); then
+    echo "Error: Failed to parse YAML file: $pattern_file" >&2
+    return 1
+  fi
+
+  # Validate schema
+  if ! validate_pattern_schema "$json_data"; then
+    echo "Error: Schema validation failed for: $pattern_file" >&2
+    return 1
+  fi
+
+  # Check if jq is available
+  if ! command -v jq &> /dev/null; then
+    echo "Error: jq is required for pattern loading but not found" >&2
+    return 1
+  fi
+
+  # Extract and populate agent data
+  local agent_count
+  agent_count=$(echo "$json_data" | jq '.agents | length')
+
+  local loaded_count=0
+
+  for ((i=0; i<agent_count; i++)); do
+    local agent_name
+    agent_name=$(echo "$json_data" | jq -r ".agents[$i].name")
+
+    # Extract description if present
+    local description
+    description=$(echo "$json_data" | jq -r ".agents[$i].description // empty")
+    if [[ -n "$description" ]]; then
+      AGENT_DESCRIPTIONS[$agent_name]="$description"
+    fi
+
+    # Extract category if present
+    local category
+    category=$(echo "$json_data" | jq -r ".agents[$i].category // empty")
+    if [[ -n "$category" ]]; then
+      AGENT_CATEGORIES[$agent_name]="$category"
+    fi
+
+    # Extract use_case if present
+    local use_case
+    use_case=$(echo "$json_data" | jq -r ".agents[$i].use_case // empty")
+    if [[ -n "$use_case" ]]; then
+      AGENT_USE_CASES[$agent_name]="$use_case"
+    fi
+
+    # Extract patterns and build pattern string
+    local pattern_count
+    pattern_count=$(echo "$json_data" | jq ".agents[$i].patterns | length")
+
+    local pattern_buffer=""
+
+    for ((j=0; j<pattern_count; j++)); do
+      local type
+      local match
+      local weight
+
+      type=$(echo "$json_data" | jq -r ".agents[$i].patterns[$j].type")
+      match=$(echo "$json_data" | jq -r ".agents[$i].patterns[$j].match")
+      weight=$(echo "$json_data" | jq -r ".agents[$i].patterns[$j].weight")
+
+      # Append to pattern buffer in format "type:match:weight\n"
+      pattern_buffer+="${type}:${match}:${weight}"$'\n'
+    done
+
+    # Store patterns for agent (merge with existing if any)
+    if [[ -n "${AGENT_PATTERNS[$agent_name]:-}" ]]; then
+      # Append to existing patterns
+      AGENT_PATTERNS[$agent_name]="${AGENT_PATTERNS[$agent_name]}${pattern_buffer}"
+    else
+      # Set new patterns
+      AGENT_PATTERNS[$agent_name]="$pattern_buffer"
+    fi
+
+    ((loaded_count++))
+  done
+
+  if [[ ${VERBOSE:-false} == true ]]; then
+    log "  Loaded $loaded_count agent(s) from $(basename "$pattern_file")"
+  fi
+
+  return 0
+}
+
+# Task 8: Load all pattern files from directory
+# Args: $1 - patterns directory path
+# Returns: 0 on success, 1 if no files loaded
+load_pattern_files() {
+  local patterns_dir="$1"
+
+  # Discover pattern files
+  local -a pattern_files=()
+  while IFS= read -r file; do
+    [[ -n "$file" ]] && pattern_files+=("$file")
+  done < <(discover_pattern_files "$patterns_dir" 2>/dev/null)
+
+  if [[ ${#pattern_files[@]} -eq 0 ]]; then
+    echo "Error: No pattern files found in directory: $patterns_dir" >&2
+    return 1
+  fi
+
+  if [[ ${VERBOSE:-false} == true ]]; then
+    log "Loading patterns from ${#pattern_files[@]} file(s)"
+  fi
+
+  # Load each pattern file
+  local loaded_files=0
+  local failed_files=0
+  local total_agents=0
+
+  for pattern_file in "${pattern_files[@]}"; do
+    # Skip example files
+    if [[ "$(basename "$pattern_file")" == "example.yml" ]] || [[ "$(basename "$pattern_file")" == "example.yaml" ]]; then
+      if [[ ${VERBOSE:-false} == true ]]; then
+        log "Skipping example file: $(basename "$pattern_file")"
+      fi
+      continue
+    fi
+
+    if load_pattern_file "$pattern_file"; then
+      ((loaded_files++))
+    else
+      ((failed_files++))
+      echo "Warning: Failed to load pattern file: $pattern_file" >&2
+    fi
+  done
+
+  # Count total agents loaded
+  if [[ -n "${!AGENT_PATTERNS[@]}" ]]; then
+    total_agents="${#AGENT_PATTERNS[@]}"
+  fi
+
+  if [[ $loaded_files -eq 0 ]]; then
+    echo "Error: Failed to load any pattern files" >&2
+    return 1
+  fi
+
+  if [[ ${VERBOSE:-false} == true ]]; then
+    log "Successfully loaded $loaded_files file(s), $failed_files failed"
+    log "Total agents with patterns: $total_agents"
+  else
+    echo "✓ Loaded $total_agents agent detection patterns from $loaded_files file(s)" >&2
+  fi
+
+  return 0
+}
+
+# Parse YAML pattern file and populate AGENT_PATTERNS (LEGACY - used as fallback)
 # Returns 0 on success, 1 if file not found or parse error
 parse_yaml_patterns() {
   local yaml_file="$1"
@@ -1543,7 +2167,64 @@ parse_yaml_patterns() {
   return 0
 }
 
-# Load detection patterns from YAML file with fallback to hardcoded patterns
+# Task 11: Safe pattern loading with error handling and fallback
+# Returns: 0 on success (patterns loaded from YAML or fallback), 1 on critical error
+safe_load_patterns() {
+  # Step 1: Check dependencies
+  if ! check_dependencies 2>/dev/null; then
+    if [[ ${VERBOSE:-false} == true ]]; then
+      log "Dependencies missing for YAML pattern loading, falling back to hardcoded patterns"
+    else
+      echo "⚠ Dependencies missing for YAML pattern loading, using hardcoded patterns" >&2
+    fi
+    initialize_detection_patterns_hardcoded
+    return 0
+  fi
+
+  # Step 2: Setup patterns directory
+  local patterns_dir
+  if ! patterns_dir=$(setup_patterns_directory); then
+    if [[ ${VERBOSE:-false} == true ]]; then
+      log "Pattern directory not found, falling back to hardcoded patterns"
+    else
+      echo "⚠ Pattern directory not found, using hardcoded patterns" >&2
+    fi
+    initialize_detection_patterns_hardcoded
+    return 0
+  fi
+
+  # Step 3: Load pattern files
+  if ! load_pattern_files "$patterns_dir"; then
+    if [[ ${VERBOSE:-false} == true ]]; then
+      log "Failed to load pattern files, falling back to hardcoded patterns"
+    else
+      echo "⚠ Failed to load pattern files, using hardcoded patterns" >&2
+    fi
+    initialize_detection_patterns_hardcoded
+    return 0
+  fi
+
+  # Step 4: Validate that patterns were loaded
+  local pattern_count=0
+  if [[ -n "${!AGENT_PATTERNS[@]}" ]]; then
+    pattern_count="${#AGENT_PATTERNS[@]}"
+  fi
+
+  if [[ $pattern_count -eq 0 ]]; then
+    if [[ ${VERBOSE:-false} == true ]]; then
+      log "No patterns loaded from YAML files, falling back to hardcoded patterns"
+    else
+      echo "⚠ No patterns loaded from YAML files, using hardcoded patterns" >&2
+    fi
+    initialize_detection_patterns_hardcoded
+    return 0
+  fi
+
+  # Success - patterns loaded from YAML
+  return 0
+}
+
+# Load detection patterns from YAML file with fallback to hardcoded patterns (LEGACY)
 # Pattern format: "type:pattern:weight" (one per line)
 # Types: file, path, content
 # Weight: 0-25 (contribution to confidence score)
@@ -2207,8 +2888,14 @@ calculate_confidence() {
   echo "$confidence"
 }
 
+# Guard to prevent execution when sourced (for testing)
+if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+  # Script is being sourced, don't execute main logic
+  return 0 2>/dev/null || exit 0
+fi
+
 # Load detection patterns (from YAML or fallback to hardcoded)
-load_detection_patterns
+safe_load_patterns
 
 # Handle import mode - skip detection and install agents from profile (Task 9)
 if [[ -n "$IMPORT_FILE" ]]; then

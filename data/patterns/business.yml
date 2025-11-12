@@ -1,0 +1,92 @@
+version: "1.0"
+category: "Business"
+
+agents:
+  - name: "validation-specialist"
+    description: "Data validation, schema validation, input validation"
+    category: "Business"
+    patterns:
+      - type: "content"
+        match: "validation"
+        weight: 15
+      - type: "content"
+        match: "schema validation"
+        weight: 15
+      - type: "content"
+        match: "yup"
+        weight: 15
+      - type: "content"
+        match: "zod"
+        weight: 15
+      - type: "content"
+        match: "joi"
+        weight: 15
+      - type: "content"
+        match: "validator"
+        weight: 10
+
+  - name: "architecture-specialist"
+    description: "System architecture, design patterns, ADRs"
+    category: "Business"
+    patterns:
+      - type: "file"
+        match: "architecture.md"
+        weight: 20
+      - type: "content"
+        match: "architecture decision record"
+        weight: 20
+      - type: "content"
+        match: "ADR"
+        weight: 15
+      - type: "path"
+        match: "docs/architecture"
+        weight: 15
+      - type: "path"
+        match: "adr"
+        weight: 20
+
+  - name: "localization-specialist"
+    description: "Internationalization, translations, i18n"
+    category: "Business"
+    patterns:
+      - type: "path"
+        match: "i18n"
+        weight: 20
+      - type: "path"
+        match: "locales"
+        weight: 20
+      - type: "file"
+        match: ".i18nrc"
+        weight: 15
+      - type: "content"
+        match: "react-intl"
+        weight: 15
+      - type: "content"
+        match: "i18next"
+        weight: 15
+      - type: "content"
+        match: "translation"
+        weight: 10
+
+  - name: "compliance-specialist"
+    description: "Regulatory compliance, GDPR, HIPAA, security standards"
+    category: "Business"
+    patterns:
+      - type: "content"
+        match: "gdpr"
+        weight: 15
+      - type: "content"
+        match: "hipaa"
+        weight: 15
+      - type: "content"
+        match: "pci-dss"
+        weight: 15
+      - type: "content"
+        match: "soc 2"
+        weight: 15
+      - type: "content"
+        match: "compliance"
+        weight: 10
+      - type: "path"
+        match: "compliance"
+        weight: 15

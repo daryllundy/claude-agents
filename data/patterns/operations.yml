@@ -1,0 +1,72 @@
+version: "1.0"
+category: "Operations"
+
+agents:
+  - name: "migration-specialist"
+    description: "Database migrations, schema changes, data migrations"
+    category: "Operations"
+    patterns:
+      - type: "path"
+        match: "migrations"
+        weight: 20
+      - type: "path"
+        match: "db/migrate"
+        weight: 20
+      - type: "path"
+        match: "prisma/migrations"
+        weight: 20
+      - type: "file"
+        match: "*migration*.sql"
+        weight: 15
+      - type: "content"
+        match: "ALTER TABLE"
+        weight: 15
+      - type: "content"
+        match: "migration"
+        weight: 10
+
+  - name: "dependency-specialist"
+    description: "Dependency management, package updates, version control"
+    category: "Operations"
+    patterns:
+      - type: "file"
+        match: "package-lock.json"
+        weight: 15
+      - type: "file"
+        match: "yarn.lock"
+        weight: 15
+      - type: "file"
+        match: "pnpm-lock.yaml"
+        weight: 15
+      - type: "file"
+        match: "requirements.txt"
+        weight: 15
+      - type: "file"
+        match: "poetry.lock"
+        weight: 15
+      - type: "file"
+        match: "Gemfile.lock"
+        weight: 15
+      - type: "file"
+        match: "go.sum"
+        weight: 15
+
+  - name: "git-specialist"
+    description: "Git workflows, submodules, hooks, advanced Git operations"
+    category: "Operations"
+    patterns:
+      - type: "file"
+        match: ".gitmodules"
+        weight: 20
+      - type: "path"
+        match: ".git/hooks"
+        weight: 15
+      - type: "file"
+        match: ".gitattributes"
+        weight: 10
+      - type: "content"
+        match: "submodule"
+        weight: 15
+      - type: "file"
+        match: ".gitmessage"
+        weight: 10

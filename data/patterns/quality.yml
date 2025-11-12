@@ -1,0 +1,127 @@
+version: "1.0"
+category: "Quality"
+
+agents:
+  - name: "test-specialist"
+    description: "Testing frameworks, test suites, test automation"
+    category: "Quality"
+    patterns:
+      - type: "path"
+        match: "tests"
+        weight: 15
+      - type: "path"
+        match: "__tests__"
+        weight: 15
+      - type: "path"
+        match: "spec"
+        weight: 15
+      - type: "file"
+        match: "pytest.ini"
+        weight: 15
+      - type: "file"
+        match: "jest.config.js"
+        weight: 15
+      - type: "file"
+        match: "vitest.config.ts"
+        weight: 15
+      - type: "file"
+        match: "playwright.config.ts"
+        weight: 15
+      - type: "content"
+        match: "describe("
+        weight: 10
+
+  - name: "security-specialist"
+    description: "Security best practices, authentication, authorization"
+    category: "Quality"
+    patterns:
+      - type: "content"
+        match: "jwt"
+        weight: 10
+      - type: "content"
+        match: "bcrypt"
+        weight: 10
+      - type: "content"
+        match: "helmet"
+        weight: 10
+      - type: "content"
+        match: "csrf"
+        weight: 10
+      - type: "content"
+        match: "authentication"
+        weight: 10
+      - type: "content"
+        match: "authorization"
+        weight: 10
+      - type: "file"
+        match: "security.yml"
+        weight: 15
+
+  - name: "code-review-specialist"
+    description: "Code quality, linting, formatting, best practices"
+    category: "Quality"
+    patterns:
+      - type: "file"
+        match: ".codeclimate.yml"
+        weight: 15
+      - type: "content"
+        match: "TODO:"
+        weight: 10
+      - type: "content"
+        match: "FIXME:"
+        weight: 10
+      - type: "content"
+        match: "refactor"
+        weight: 10
+      - type: "file"
+        match: ".eslintrc"
+        weight: 10
+      - type: "file"
+        match: ".prettierrc"
+        weight: 10
+
+  - name: "refactoring-specialist"
+    description: "Code refactoring, technical debt, legacy code"
+    category: "Quality"
+    patterns:
+      - type: "content"
+        match: "technical debt"
+        weight: 15
+      - type: "content"
+        match: "legacy code"
+        weight: 15
+      - type: "path"
+        match: "src/legacy"
+        weight: 20
+      - type: "path"
+        match: "legacy"
+        weight: 15
+      - type: "content"
+        match: "deprecated"
+        weight: 10
+      - type: "content"
+        match: "refactor"
+        weight: 10
+
+  - name: "performance-specialist"
+    description: "Performance optimization, profiling, caching"
+    category: "Quality"
+    patterns:
+      - type: "content"
+        match: "performance"
+        weight: 15
+      - type: "content"
+        match: "profiling"
+        weight: 15
+      - type: "content"
+        match: "latency"
+        weight: 10
+      - type: "content"
+        match: "optimization"
+        weight: 10
+      - type: "content"
+        match: "cache"
+        weight: 10
+      - type: "file"
+        match: "lighthouse.config.js"
+        weight: 15

@@ -1,0 +1,450 @@
+# Example Agent Detection Pattern File
+#
+# This file demonstrates all supported fields and pattern types in the
+# agent detection pattern schema. Use this as a reference when creating
+# custom pattern files.
+#
+# Schema Version: 1.0
+
+version: "1.0"
+
+# Optional: Category for organizational purposes
+# This groups related agents together in the pattern file
+category: "Example Patterns"
+
+# Required: Array of agent definitions
+agents:
+  # Example 1: Infrastructure Agent with All Pattern Types
+  - name: "terraform-specialist"
+    
+    # Optional: Human-readable description
+    description: "Terraform configuration, modules, state management, and infrastructure as code"
+    
+    # Optional: Agent category for grouping in recommendations
+    category: "Infrastructure (IaC)"
+    
+    # Required: Array of detection patterns
+    patterns:
+      # Pattern Type: FILE
+      # Matches file names and extensions using glob patterns
+      
+      # Definitive indicator (weight 25)
+      - type: "file"
+        match: "terraform.tfstate"
+        weight: 25
+      
+      # Strong primary indicator (weight 20)
+      - type: "file"
+        match: "*.tf"
+        weight: 20
+      
+      # Secondary indicator (weight 15)
+      - type: "file"
+        match: "*.tfvars"
+        weight: 15
+      
+      - type: "file"
+        match: ".terraform.lock.hcl"
+        weight: 15
+      
+      # Pattern Type: PATH
+      # Matches directory names and path segments
+      
+      # Strong indicator (weight 20)
+      - type: "path"
+        match: "terraform"
+        weight: 20
+      
+      # Weak indicator (weight 10)
+      - type: "path"
+        match: ".terraform"
+        weight: 10
+      
+      # Pattern Type: CONTENT
+      # Matches text content within files
+      
+      # Weak indicator (weight 10)
+      - type: "content"
+        match: "terraform"
+        weight: 10
+      
+      - type: "content"
+        match: "resource"
+        weight: 5
+
+  # Example 2: Cloud Provider Agent
+  - name: "aws-specialist"
+    description: "AWS cloud services, architecture, CloudFormation, CDK, and AWS-specific tooling"
+    category: "Infrastructure (Cloud)"
+    patterns:
+      # File patterns with exact names
+      - type: "file"
+        match: "cloudformation.yaml"
+        weight: 20
+      
+      - type: "file"
+        match: "cloudformation.yml"
+        weight: 20
+      
+      - type: "file"
+        match: "cdk.json"
+        weight: 20
+      
+      - type: "file"
+        match: "samconfig.toml"
+        weight: 20
+      
+      # File patterns with glob
+      - type: "file"
+        match: "*.template.json"
+        weight: 15
+      
+      - type: "file"
+        match: "*.template.yaml"
+        weight: 15
+      
+      # Path patterns
+      - type: "path"
+        match: ".aws"
+        weight: 10
+      
+      - type: "path"
+        match: "cloudformation"
+        weight: 15
+      
+      # Content patterns with specific AWS identifiers
+      - type: "content"
+        match: 'provider "aws"'
+        weight: 20
+      
+      - type: "content"
+        match: "aws_"
+        weight: 15
+      
+      - type: "content"
+        match: "AWS::"
+        weight: 15
+      
+      - type: "content"
+        match: "aws-cdk"
+        weight: 15
+
+  # Example 3: Container Platform Agent
+  - name: "docker-specialist"
+    description: "Docker containerization, Dockerfile optimization, docker-compose, and container best practices"
+    category: "Infrastructure (Platform)"
+    patterns:
+      # Definitive indicators
+      - type: "file"
+        match: "Dockerfile"
+        weight: 25
+      
+      - type: "file"
+        match: "docker-compose.yml"
+        weight: 25
+      
+      - type: "file"
+        match: "docker-compose.yaml"
+        weight: 25
+      
+      # Secondary indicators
+      - type: "file"
+        match: ".dockerignore"
+        weight: 15
+      
+      - type: "file"
+        match: "Dockerfile.*"
+        weight: 20
+      
+      # Path indicators
+      - type: "path"
+        match: "docker"
+        weight: 15
+      
+      # Content indicators
+      - type: "content"
+        match: "FROM"
+        weight: 10
+      
+      - type: "content"
+        match: "docker-compose"
+        weight: 10
+
+  # Example 4: Orchestration Platform Agent
+  - name: "kubernetes-specialist"
+    description: "Kubernetes orchestration, Helm charts, manifests, and cluster management"
+    category: "Infrastructure (Platform)"
+    patterns:
+      # Helm-specific files (strong indicators)
+      - type: "file"
+        match: "Chart.yaml"
+        weight: 20
+      
+      - type: "file"
+        match: "values.yaml"
+        weight: 10
+      
+      - type: "file"
+        match: "values.yml"
+        weight: 10
+      
+      # Kustomize files
+      - type: "file"
+        match: "kustomization.yaml"
+        weight: 15
+      
+      - type: "file"
+        match: "kustomization.yml"
+        weight: 15
+      
+      # Kubernetes manifest patterns
+      - type: "file"
+        match: "*-deployment.yaml"
+        weight: 15
+      
+      - type: "file"
+        match: "*-service.yaml"
+        weight: 15
+      
+      # Path indicators
+      - type: "path"
+        match: "k8s"
+        weight: 20
+      
+      - type: "path"
+        match: "kubernetes"
+        weight: 20
+      
+      - type: "path"
+        match: "helm"
+        weight: 15
+      
+      - type: "path"
+        match: "charts"
+        weight: 10
+      
+      # Content indicators
+      - type: "content"
+        match: "apiVersion"
+        weight: 10
+      
+      - type: "content"
+        match: "kind: Deployment"
+        weight: 15
+      
+      - type: "content"
+        match: "kind: Service"
+        weight: 15
+      
+      - type: "content"
+        match: "kubectl"
+        weight: 10
+
+  # Example 5: Frontend Development Agent
+  - name: "frontend-specialist"
+    description: "React, Vue, Angular, and modern frontend development"
+    category: "Development (Frontend)"
+    patterns:
+      # Package files
+      - type: "file"
+        match: "package.json"
+        weight: 15
+      
+      # React-specific
+      - type: "file"
+        match: "*.jsx"
+        weight: 20
+      
+      - type: "file"
+        match: "*.tsx"
+        weight: 20
+      
+      # Vue-specific
+      - type: "file"
+        match: "*.vue"
+        weight: 20
+      
+      # Angular-specific
+      - type: "file"
+        match: "angular.json"
+        weight: 20
+      
+      # Build tools
+      - type: "file"
+        match: "webpack.config.js"
+        weight: 15
+      
+      - type: "file"
+        match: "vite.config.js"
+        weight: 15
+      
+      - type: "file"
+        match: "vite.config.ts"
+        weight: 15
+      
+      # Path indicators
+      - type: "path"
+        match: "components"
+        weight: 10
+      
+      - type: "path"
+        match: "src"
+        weight: 5
+      
+      # Content indicators
+      - type: "content"
+        match: "import React"
+        weight: 15
+      
+      - type: "content"
+        match: "from 'react'"
+        weight: 15
+      
+      - type: "content"
+        match: "from 'vue'"
+        weight: 15
+
+  # Example 6: Testing Agent
+  - name: "test-specialist"
+    description: "Test strategy, unit testing, integration testing, and test automation"
+    category: "Quality (Testing)"
+    patterns:
+      # Test configuration files
+      - type: "file"
+        match: "jest.config.js"
+        weight: 20
+      
+      - type: "file"
+        match: "vitest.config.ts"
+        weight: 20
+      
+      - type: "file"
+        match: "pytest.ini"
+        weight: 20
+      
+      - type: "file"
+        match: ".rspec"
+        weight: 20
+      
+      # Test files
+      - type: "file"
+        match: "*.test.js"
+        weight: 15
+      
+      - type: "file"
+        match: "*.test.ts"
+        weight: 15
+      
+      - type: "file"
+        match: "*.spec.js"
+        weight: 15
+      
+      - type: "file"
+        match: "*.spec.ts"
+        weight: 15
+      
+      - type: "file"
+        match: "*_test.py"
+        weight: 15
+      
+      - type: "file"
+        match: "*_spec.rb"
+        weight: 15
+      
+      # Path indicators
+      - type: "path"
+        match: "tests"
+        weight: 15
+      
+      - type: "path"
+        match: "test"
+        weight: 15
+      
+      - type: "path"
+        match: "__tests__"
+        weight: 15
+      
+      - type: "path"
+        match: "spec"
+        weight: 15
+      
+      # Content indicators
+      - type: "content"
+        match: "describe("
+        weight: 10
+      
+      - type: "content"
+        match: "it("
+        weight: 10
+      
+      - type: "content"
+        match: "test("
+        weight: 10
+      
+      - type: "content"
+        match: "expect("
+        weight: 10
+
+  # Example 7: Security Agent
+  - name: "security-specialist"
+    description: "Security audits, vulnerability scanning, and security best practices"
+    category: "Quality (Security)"
+    patterns:
+      # Security configuration files
+      - type: "file"
+        match: ".snyk"
+        weight: 20
+      
+      - type: "file"
+        match: "security.md"
+        weight: 15
+      
+      - type: "file"
+        match: "SECURITY.md"
+        weight: 15
+      
+      # Dependency scanning
+      - type: "file"
+        match: "Gemfile.lock"
+        weight: 10
+      
+      - type: "file"
+        match: "package-lock.json"
+        weight: 10
+      
+      - type: "file"
+        match: "yarn.lock"
+        weight: 10
+      
+      # Path indicators
+      - type: "path"
+        match: "security"
+        weight: 15
+      
+      - type: "path"
+        match: ".github/workflows"
+        weight: 10
+      
+      # Content indicators
+      - type: "content"
+        match: "vulnerability"
+        weight: 10
+      
+      - type: "content"
+        match: "security"
+        weight: 5
+      
+      - type: "content"
+        match: "authentication"
+        weight: 10
+      
+      - type: "content"
+        match: "authorization"
+        weight: 10
+
+  # Example 8: Minimal Agent (showing minimum required fields)
+  - name: "minimal-example"
+    patterns:
+      - type: "file"
+        match: "example.txt"
+        weight: 10

@@ -1,0 +1,29 @@
+version: "1.0"
+category: "Specialized"
+
+agents:
+  - name: "data-science-specialist"
+    description: "Data science, machine learning, notebooks, analytics"
+    category: "Specialized"
+    patterns:
+      - type: "path"
+        match: "notebooks"
+        weight: 20
+      - type: "file"
+        match: "environment.yml"
+        weight: 15
+      - type: "content"
+        match: "pandas"
+        weight: 15
+      - type: "content"
+        match: "scikit-learn"
+        weight: 15
+      - type: "content"
+        match: "tensorflow"
+        weight: 15
+      - type: "content"
+        match: "pytorch"
+        weight: 15
+      - type: "file"
+        match: "*.ipynb"
+        weight: 20

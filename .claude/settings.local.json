@@ -24,7 +24,17 @@
       "Bash(git tag:*)",
       "Bash(git push:*)",
       "Bash(command -v:*)",
-      "Bash(gh:*)"
+      "Bash(gh:*)",
+      "Bash(./scripts/recommend_agents.sh:*)",
+      "Bash(python3:*)",
+      "Bash(pip3 install:*)",
+      "Bash(chmod:*)",
+      "Bash(./test_pattern_loading.sh:*)",
+      "Bash(./test_use_case_metadata.sh:*)",
+      "Bash(fold:*)",
+      "Bash(timeout 5 bash:*)",
+      "Bash(./test_use_case_simple.sh)",
+      "Bash(jq:*)"
     ],
     "deny": [],
     "ask": []
