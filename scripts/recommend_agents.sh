@@ -1674,7 +1674,7 @@ check_dependencies() {
 setup_patterns_directory() {
   local patterns_dir=""
   local script_dir
-  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 
   # Priority 1: CLI flag
   if [[ -n "${PATTERNS_DIR}" ]]; then
@@ -2233,7 +2233,7 @@ load_detection_patterns() {
   # Try in order: data/ directory, same directory as script, relative to working directory
   local yaml_file=""
   local script_dir
-  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 
   # Try multiple locations
   for candidate in \
@@ -2889,7 +2889,7 @@ calculate_confidence() {
 }
 
 # Guard to prevent execution when sourced (for testing)
-if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+if [[ "${BASH_SOURCE[0]:-$0}" != "${0}" ]]; then
   # Script is being sourced, don't execute main logic
   return 0 2>/dev/null || exit 0
 fi
