@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -uo pipefail
 
 # Master test runner for all agent recommendation tests
 # Runs both unit and integration tests
@@ -61,6 +61,8 @@ run_suite "Update Detection" "$SCRIPT_DIR/unit/test_update_detection.sh"
 run_suite "Selection State Management" "$SCRIPT_DIR/unit/test_selection_state.sh"
 run_suite "Rendering Functions" "$SCRIPT_DIR/unit/test_rendering.sh"
 run_suite "Confidence Normalization" "$SCRIPT_DIR/unit/test_confidence_normalization.sh"
+run_suite "Caching Functions" "$SCRIPT_DIR/unit/test_caching_functions.sh"
+run_suite "Fetch with Retry" "$SCRIPT_DIR/unit/test_fetch_with_retry.sh"
 
 # Run integration tests
 echo -e "${YELLOW}═══════════════════════════════════════${NC}"
@@ -69,6 +71,7 @@ echo -e "${YELLOW}════════════════════�
 echo ""
 
 run_suite "End-to-End Detection" "$SCRIPT_DIR/integration/test_detection.sh"
+run_suite "Update Operations" "$SCRIPT_DIR/integration/test_update_operations.sh"
 
 # Run interactive tests if expect is available
 if command -v expect &> /dev/null; then

@@ -22,7 +22,22 @@ Clone or keep this repository accessible:
 git clone https://github.com/yourusername/claude-code-agents.git
 ```
 
-### 3. Start Using Agents
+### 3. (Optional) Auto-Install Recommended Agents
+Run the agent recommendation script to automatically detect and install relevant agents:
+```bash
+curl -sSL https://raw.githubusercontent.com/daryllundy/claude-agents/main/scripts/recommend_agents.sh | bash
+```
+
+The script features:
+- **Automatic Retry**: Network operations retry 3 times with exponential backoff (1s, 2s, 4s)
+- **Intelligent Caching**: Downloaded files cached for 24 hours (reduces network requests)
+- **Offline Support**: Works with cached data when network unavailable
+- **Interactive Mode**: Select agents with keyboard navigation (`--interactive`)
+- **Update Detection**: Check for and install agent updates (`--check-updates`, `--update-all`)
+
+For detailed information about network operations and caching, see [docs/NETWORK_OPERATIONS.md](docs/NETWORK_OPERATIONS.md).
+
+### 4. Start Using Agents
 In Claude Code, simply request an agent:
 ```
 "Use the docker-specialist to create a production Dockerfile for my Flask app"
@@ -189,6 +204,7 @@ When you request an agent in Claude Code Pro:
 
 - **[README.md](README.md)** - Overview and quick reference
 - **[CLAUDE_CODE_USAGE.md](CLAUDE_CODE_USAGE.md)** - Comprehensive guide with examples
+- **[docs/NETWORK_OPERATIONS.md](docs/NETWORK_OPERATIONS.md)** - Network operations, retry logic, and caching
 - **[.claude/agents/AGENTS_REGISTRY.md](.claude/agents/AGENTS_REGISTRY.md)** - Complete agent catalog
 - **[.claude/agents/*.md](.claude/agents/)** - Individual agent details
 

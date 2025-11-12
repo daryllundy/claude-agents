@@ -48,6 +48,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Professional Layout**: Box-drawing characters for clean, organized output
 - **Legend**: Clear explanation of symbols and confidence tiers
 
+#### Network Operations & Caching
+- **Automatic Retry with Exponential Backoff**: All network operations retry up to 3 times with 1s, 2s, 4s delays
+- **Intelligent Caching**: Downloaded files cached for 24 hours (configurable) to reduce network requests
+- **Offline Support**: Works with cached data when network unavailable
+- **HTTP Diagnostics**: Logs HTTP status codes for each attempt
+- **Troubleshooting Guidance**: Detailed help provided on network failures
+- **Cache Control Flags**: `--force-refresh`, `--clear-cache`, `--cache-dir`, `--cache-expiry`
+- **Update Safety**: Automatic backup and rollback for update operations
+- **Verbose Logging**: `--verbose` flag shows detailed network operations and cache behavior
+- **Cache Location**: `$XDG_CACHE_HOME/claude-agents` or `~/.cache/claude-agents`
+
+#### Documentation
+- **Network Operations Guide**: Comprehensive documentation in `docs/NETWORK_OPERATIONS.md`
+- **Retry Mechanism**: Detailed explanation of retry logic and configuration
+- **Caching System**: Cache strategy, expiry, and management documentation
+- **Offline Workflows**: Examples and best practices for offline usage
+- **Troubleshooting**: Network failures, cache issues, and performance problems
+- **Advanced Usage**: Custom retry logic, cache warming, monitoring, and team sharing
+- **CI/CD Integration**: Examples for GitHub Actions, GitLab CI, and Jenkins
+- **Updated README**: Added "Network Operations & Caching" section with quick reference
+- **Updated GETTING_STARTED**: Added network features overview and link to detailed guide
+- **Updated CLAUDE_CODE_USAGE**: Added agent recommendation script section with cache control examples
+
 #### Interactive Selection Mode
 - **Keyboard Navigation**: Arrow keys to navigate, Space to toggle, Enter to confirm
 - **Pre-Selection**: Agents above 50% confidence pre-selected by default

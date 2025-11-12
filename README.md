@@ -506,7 +506,193 @@ Alternative: "Use e-commerce-coordinator to execute the full transformation road
 3. **Provide Context**: Include file paths, technologies, and constraints
 4. **Review Output**: Always review agent results before proceeding
 
+## Network Operations & Caching
+
+The agent recommendation script includes robust network handling with automatic retry logic and intelligent caching to ensure reliability in various network conditions.
+
+### Automatic Retry with Exponential Backoff
+
+All network operations automatically retry on failure:
+
+- **Retry Attempts**: 3 attempts per download
+- **Backoff Strategy**: Exponential backoff (1s, 2s, 4s between attempts)
+- **Timeout**: 30 seconds per attempt
+- **Error Diagnostics**: HTTP status codes logged for each attempt
+- **Troubleshooting Guidance**: Detailed help provided on final failure
+
+**Example behavior**:
+```
+Attempt 1 failed (HTTP 503). Retrying in 1s...
+Attempt 2 failed (HTTP 503). Retrying in 2s...
+Attempt 3 failed (HTTP 503). No more retries.
+
+Error: Failed to download from https://example.com/file after 3 attempts
+
+Troubleshooting:
+  1. Check your internet connection
+  2. Verify the URL is accessible: curl -I https://example.com/file
+  3. Check if you're behind a proxy or firewall
+  4. Try again later if the server is temporarily unavailable
+```
+
+### Intelligent Caching
+
+The script caches downloaded files to reduce network requests and support offline workflows:
+
+**Cache Behavior**:
+- **Location**: `$XDG_CACHE_HOME/claude-agents` or `~/.cache/claude-agents`
+- **Default Expiry**: 24 hours (86400 seconds)
+- **Cache Strategy**: Check cache first, fetch on miss or stale data
+- **Update Operations**: Use 1-hour cache for update checks and registry fetches
+
+**Benefits**:
+- Faster repeated operations (no network delay)
+- Reduced bandwidth usage
+- Offline workflow support (use cached data when network unavailable)
+- Improved reliability in CI/CD environments
+
+### Cache Control Flags
+
+Control caching behavior with command-line flags:
+
+```bash
+# Force refresh - bypass cache and fetch fresh data
+bash scripts/recommend_agents.sh --force-refresh
+
+# Clear all cached files
+bash scripts/recommend_agents.sh --clear-cache
+
+# Use custom cache directory
+bash scripts/recommend_agents.sh --cache-dir=/tmp/my-cache
+
+# Set custom cache expiry (in seconds)
+bash scripts/recommend_agents.sh --cache-expiry=3600  # 1 hour
+bash scripts/recommend_agents.sh --cache-expiry=86400  # 24 hours (default)
+bash scripts/recommend_agents.sh --cache-expiry=604800  # 1 week
+```
+
+### Offline Workflow Example
+
+```bash
+# First run - downloads and caches agent files
+bash scripts/recommend_agents.sh
+
+# Subsequent runs within 24 hours - uses cached data (instant)
+bash scripts/recommend_agents.sh
+
+# After 24 hours - automatically fetches fresh data
+bash scripts/recommend_agents.sh
+
+# Force fresh data anytime
+bash scripts/recommend_agents.sh --force-refresh
+
+# Work completely offline (uses cached data regardless of age)
+# Note: Initial download required before offline use
+bash scripts/recommend_agents.sh  # Uses cache if available
+```
+
+### Cache Management
+
+```bash
+# View cache location
+echo ${XDG_CACHE_HOME:-$HOME/.cache}/claude-agents
+
+# Check cache size
+du -sh ${XDG_CACHE_HOME:-$HOME/.cache}/claude-agents
+
+# List cached files
+ls -lh ${XDG_CACHE_HOME:-$HOME/.cache}/claude-agents
+
+# Clear cache manually
+rm -rf ${XDG_CACHE_HOME:-$HOME/.cache}/claude-agents/*
+
+# Or use the built-in flag
+bash scripts/recommend_agents.sh --clear-cache
+```
+
+### Network Reliability Features
+
+**Automatic Backup & Rollback**:
+- Updates create backups before modifying files
+- Failed updates automatically restore from backup
+- Backup location: `.claude/agents/.backup_<timestamp>/`
+
+**Update Safety**:
+```bash
+# Check for updates (uses 1-hour cache)
+bash scripts/recommend_agents.sh --check-updates
+
+# Update all agents with automatic backup/rollback
+bash scripts/recommend_agents.sh --update-all
+
+# If update fails, original files are automatically restored
+```
+
+**Verbose Logging**:
+```bash
+# See detailed network operations
+bash scripts/recommend_agents.sh --verbose
+
+# Output includes:
+# - Each download attempt with URL
+# - Cache hit/miss information
+# - HTTP status codes
+# - Retry timing
+```
+
 ## Troubleshooting
+
+### Network & Connectivity Issues
+
+#### Intermittent network failures
+**Problem**: Downloads fail occasionally due to network instability
+
+**Solutions**:
+- The script automatically retries 3 times with exponential backoff
+- Wait for automatic retry completion before interrupting
+- Use `--verbose` to see detailed retry attempts
+- Check network stability: `ping -c 5 raw.githubusercontent.com`
+
+#### Slow or timeout errors
+**Problem**: Downloads timeout after 30 seconds
+
+**Solutions**:
+- Check your internet connection speed
+- Verify you're not behind a restrictive firewall
+- Try again during off-peak hours
+- Use cached data if available (script uses cache automatically)
+- Consider using `--cache-expiry=604800` (1 week) for slower connections
+
+#### Proxy or firewall blocking
+**Problem**: Downloads fail with connection refused or timeout
+
+**Solutions**:
+- Configure proxy settings in your environment:
+  ```bash
+  export http_proxy=http://proxy.example.com:8080
+  export https_proxy=http://proxy.example.com:8080
+  bash scripts/recommend_agents.sh
+  ```
+- Check firewall rules for `raw.githubusercontent.com`
+- Contact your network administrator if corporate firewall blocks GitHub
+- Use `--cache-dir` to specify a location accessible through your network
+
+#### CI/CD environment failures
+**Problem**: Script fails in automated CI/CD pipelines
+
+**Solutions**:
+- Use caching to reduce network dependency:
+  ```yaml
+  # GitHub Actions example
+  - name: Cache agent files
+    uses: actions/cache@v3
+    with:
+      path: ~/.cache/claude-agents
+      key: claude-agents-${{ hashFiles('**/recommend_agents.sh') }}
+  ```
+- Set longer cache expiry for CI: `--cache-expiry=604800`
+- Use `--force-refresh` only when necessary
+- Implement retry logic in CI scripts if needed
 
 ### Agent Recommendation Script Issues
 
@@ -519,6 +705,8 @@ Alternative: "Use e-commerce-coordinator to execute the full transformation road
 - Try with `--branch main` to explicitly specify the branch
 - Use `--repo` flag to specify an alternative repository URL
 - The script automatically retries failed downloads 3 times with exponential backoff
+- Check cache for existing data: `ls -lh ~/.cache/claude-agents`
+- Use `--verbose` to see detailed error information
 
 #### No agents recommended for my project
 **Problem**: Script shows "No agents met the confidence threshold"
@@ -553,6 +741,17 @@ Alternative: "Use e-commerce-coordinator to execute the full transformation road
 - This can happen if local files have different line endings or whitespace
 - Use `--update-all` to ensure all agents are synchronized
 - Backups are automatically created before updates in `.claude/agents/.backup_<timestamp>/`
+- Clear cache and force refresh: `bash scripts/recommend_agents.sh --clear-cache && bash scripts/recommend_agents.sh --check-updates --force-refresh`
+
+#### Cache issues or stale data
+**Problem**: Script uses outdated cached data
+
+**Solutions**:
+- Clear the cache: `bash scripts/recommend_agents.sh --clear-cache`
+- Force refresh to bypass cache: `bash scripts/recommend_agents.sh --force-refresh`
+- Check cache age: `ls -lh ~/.cache/claude-agents`
+- Reduce cache expiry: `bash scripts/recommend_agents.sh --cache-expiry=3600` (1 hour)
+- Verify cache location: `echo ${XDG_CACHE_HOME:-$HOME/.cache}/claude-agents`
 
 ### Agent Invocation Issues
 
@@ -603,6 +802,7 @@ For additional help, please open an issue on GitHub with:
 
 - **[GETTING_STARTED.md](GETTING_STARTED.md)** - Beginner's guide to getting started
 - **[CLAUDE_CODE_USAGE.md](CLAUDE_CODE_USAGE.md)** - Comprehensive usage guide with examples
+- **[docs/NETWORK_OPERATIONS.md](docs/NETWORK_OPERATIONS.md)** - Network operations, retry logic, and caching guide
 - **[.claude/agents/AGENTS_REGISTRY.md](.claude/agents/AGENTS_REGISTRY.md)** - Complete agent catalog
 - **[examples/README.md](examples/README.md)** - Real-world usage examples and workflows
 - **[archive/README.md](archive/README.md)** - Information about legacy implementations

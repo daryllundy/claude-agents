@@ -120,6 +120,21 @@ Tests complete detection workflows:
 
 **10 tests total**
 
+#### Update Operations (`test_update_operations.sh`)
+Tests update operations with retry and caching:
+- check_updates using fetch_with_cache
+- Network failure handling
+- Backup creation before updates
+- Rollback on update failure
+- Update count reporting
+- parse_agent_registry with caching
+- Cache hit scenarios
+- Cache miss scenarios
+- Force refresh bypassing cache
+- Retry logic with exponential backoff
+
+**10 tests total**
+
 ## Test Fixtures
 
 ### aws-terraform-project

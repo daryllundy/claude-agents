@@ -696,20 +696,123 @@ You can ask agents to refine their output:
 5. observability-specialist → Add monitoring
 ```
 
+## Agent Recommendation Script
+
+The repository includes a powerful agent recommendation script that automatically detects your project's technologies and recommends relevant agents.
+
+### Basic Usage
+
+```bash
+# Run from your project root
+curl -sSL https://raw.githubusercontent.com/daryllundy/claude-agents/main/scripts/recommend_agents.sh | bash
+
+# Or clone the repo and run locally
+bash scripts/recommend_agents.sh
+```
+
+### Network Operations & Reliability
+
+The script includes robust network handling:
+
+**Automatic Retry**:
+- 3 retry attempts per download
+- Exponential backoff (1s, 2s, 4s)
+- 30-second timeout per attempt
+- Detailed error diagnostics
+
+**Intelligent Caching**:
+- Downloads cached for 24 hours
+- Reduces network requests
+- Supports offline workflows
+- Cache location: `~/.cache/claude-agents`
+
+### Cache Control
+
+```bash
+# Force fresh download (bypass cache)
+bash scripts/recommend_agents.sh --force-refresh
+
+# Clear all cached files
+bash scripts/recommend_agents.sh --clear-cache
+
+# Custom cache directory
+bash scripts/recommend_agents.sh --cache-dir=/tmp/my-cache
+
+# Custom cache expiry (in seconds)
+bash scripts/recommend_agents.sh --cache-expiry=3600  # 1 hour
+bash scripts/recommend_agents.sh --cache-expiry=604800  # 1 week
+```
+
+### Offline Workflow
+
+```bash
+# First run (online) - downloads and caches
+bash scripts/recommend_agents.sh
+
+# Subsequent runs - uses cache (instant, works offline)
+bash scripts/recommend_agents.sh
+
+# Force refresh when back online
+bash scripts/recommend_agents.sh --force-refresh
+```
+
+### Update Management
+
+```bash
+# Check for agent updates
+bash scripts/recommend_agents.sh --check-updates
+
+# Update all agents (with automatic backup)
+bash scripts/recommend_agents.sh --update-all
+```
+
+### Advanced Features
+
+```bash
+# Interactive selection mode
+bash scripts/recommend_agents.sh --interactive
+
+# Export profile for sharing
+bash scripts/recommend_agents.sh --export my-project.json
+
+# Import profile in another project
+bash scripts/recommend_agents.sh --import my-project.json
+
+# Verbose output with detailed logging
+bash scripts/recommend_agents.sh --verbose
+
+# Adjust confidence threshold
+bash scripts/recommend_agents.sh --min-confidence 50
+
+# Dry run (see recommendations without downloading)
+bash scripts/recommend_agents.sh --dry-run
+```
+
+For comprehensive documentation on network operations, caching, and troubleshooting, see [docs/NETWORK_OPERATIONS.md](docs/NETWORK_OPERATIONS.md).
+
 ## Getting Help
 
 If you're unsure which agent to use:
 - Check `.claude/agents/AGENTS_REGISTRY.md` for full agent list
 - Review agent-specific files in `.claude/agents/` for details
 - Start with a general request and Claude Code can suggest the appropriate agent
+- Use the recommendation script to auto-detect relevant agents
+
+## Documentation
+
+- **[README.md](README.md)** - Overview and quick reference
+- **[GETTING_STARTED.md](GETTING_STARTED.md)** - Beginner's guide
+- **[docs/NETWORK_OPERATIONS.md](docs/NETWORK_OPERATIONS.md)** - Network operations and caching
+- **[.claude/agents/AGENTS_REGISTRY.md](.claude/agents/AGENTS_REGISTRY.md)** - Complete agent catalog
 
 ## Next Steps
 
 1. Browse the agent registry: `.claude/agents/AGENTS_REGISTRY.md`
 2. Review individual agent capabilities in `.claude/agents/`
-3. Try simple agent invocations with your project
-4. Build complex multi-agent workflows
-5. Customize agent prompts for your needs
+3. Try the recommendation script on your project
+4. Try simple agent invocations with your project
+5. Build complex multi-agent workflows
+6. Customize agent prompts for your needs
 
 ---
 
