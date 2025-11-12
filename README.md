@@ -327,6 +327,128 @@ agents:
 
 If the YAML file is not found or fails to parse, the script automatically falls back to hardcoded patterns, ensuring the recommendation system always works.
 
+## Understanding Confidence Scores
+
+The agent recommendation script calculates confidence scores to indicate how well your project matches each agent's expertise area. Understanding how these scores work helps you make informed decisions about which agents to use.
+
+### Confidence Calculation Formula
+
+```
+confidence = (accumulated_weight / max_possible_weight) × 100
+```
+
+Where:
+- **accumulated_weight**: Sum of weights from patterns that matched in your project
+- **max_possible_weight**: Sum of all pattern weights defined for the agent
+
+The confidence score is capped at 100%.
+
+### Why Dynamic Max Weight?
+
+Each agent has a different number and types of detection patterns based on their domain expertise. Using a dynamic max weight (rather than a fixed value) ensures confidence scores accurately reflect how well your project matches each agent's specific area:
+
+- `terraform-specialist` might have patterns totaling 85 weight (5 patterns)
+- `docker-specialist` might have patterns totaling 65 weight (4 patterns)
+- `aws-specialist` might have patterns totaling 120 weight (8 patterns)
+
+This approach makes confidence scores comparable across all agents, regardless of how many patterns each agent defines.
+
+### Example Calculation
+
+Consider the `terraform-specialist` with these patterns:
+- `file:*.tf:20` → **matches** (you have .tf files)
+- `file:*.tfvars:15` → **matches** (you have .tfvars files)
+- `file:terraform.tfstate:25` → **no match** (no state file)
+- `content:terraform:10` → **no match** (keyword not found)
+
+Calculation:
+1. **Accumulated weight**: 20 + 15 = 35 (only matched patterns)
+2. **Max possible weight**: 20 + 15 + 25 + 10 = 70 (all patterns)
+3. **Confidence**: (35 / 70) × 100 = 50%
+
+Result: `terraform-specialist` shows 50% confidence (Recommended tier)
+
+### Confidence Tiers
+
+The script categorizes agents into recommendation tiers:
+
+- **75-100%** (✓✓✓): Highly Recommended - Strong match, primary expertise needed
+- **50-74%** (✓✓): Recommended - Good match, likely useful
+- **25-49%** (✓): Suggested - Moderate match, potentially helpful
+- **0-24%**: Not shown by default (use `--min-confidence 0` to see all)
+
+### Debugging Confidence Scores
+
+If you want to understand why an agent received a specific confidence score, use the debug flags:
+
+```bash
+# Show detailed calculation for a specific agent
+bash scripts/recommend_agents.sh --debug-confidence terraform-specialist
+
+# Output shows:
+# ═══════════════════════════════════════════════════════════════════════
+# Confidence Calculation Debug: terraform-specialist
+# ═══════════════════════════════════════════════════════════════════════
+# 
+# Pattern Evaluation:
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Match Weight   Type         Pattern
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ✓     20       file         *.tf
+# ✓     15       file         *.tfvars
+# ✗     25       file         terraform.tfstate
+# ✗     10       content      terraform
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 
+# Calculation:
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Accumulated Weight:            35
+# Max Possible Weight:           70
+# Confidence:                    50%
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+```bash
+# View max possible weights for all agents
+bash scripts/recommend_agents.sh --show-max-weights
+
+# Output shows:
+# Agent Max Possible Weights
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Agent                                    Max Weight
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# aws-specialist                                  120
+# docker-specialist                                65
+# terraform-specialist                             70
+# ...
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### Troubleshooting Confidence Scores
+
+**Problem**: Agent has unexpectedly low confidence
+
+**Solutions**:
+- Use `--debug-confidence <agent-name>` to see which patterns matched
+- Check if expected files are in the scanned directory
+- Verify file naming matches patterns (e.g., `Dockerfile` vs `dockerfile`)
+- Use `--verbose` to see all pattern checks across all agents
+
+**Problem**: Agent has unexpectedly high confidence
+
+**Solutions**:
+- Review matched patterns with `--debug-confidence <agent-name>`
+- Check if generic patterns are matching unintended files
+- Consider adjusting pattern weights in `data/agent_patterns.yaml`
+
+**Problem**: Multiple agents show similar confidence scores
+
+**Solutions**:
+- This is normal for projects using multiple related technologies
+- Use `--interactive` mode to manually select the most relevant agents
+- Review agent descriptions to understand their specific focus areas
+- Consider using an orchestrator agent (e.g., `devops-orchestrator`) for complex multi-domain projects
+
 ## MCP Code Execution
 
 Several agents now include **Model Context Protocol (MCP) Code Execution** capabilities for enhanced data processing and tool integration:

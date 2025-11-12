@@ -166,10 +166,37 @@ type:pattern:weight
 - **weight**: Contribution to confidence score (0-25)
 
 #### Confidence Calculation
+
+The confidence score is calculated dynamically based on each agent's specific pattern weights:
+
 ```
-confidence = (sum of matched pattern weights / 100) * 100
+confidence = (accumulated_weight / max_possible_weight) × 100
 ```
-Capped at 100%
+
+Where:
+- **accumulated_weight**: Sum of weights from matched patterns
+- **max_possible_weight**: Sum of all pattern weights defined for the agent (varies by agent)
+
+The score is capped at 100%.
+
+**Why Dynamic Max Weight?**
+Each agent has different numbers and types of patterns. For example:
+- `terraform-specialist` might have patterns totaling 85 weight
+- `docker-specialist` might have patterns totaling 65 weight
+- `aws-specialist` might have patterns totaling 120 weight
+
+Using a dynamic max weight ensures confidence scores accurately reflect how well a project matches each agent's specific expertise area, making scores comparable across all agents.
+
+**Example Calculation:**
+Agent with patterns:
+- `file:*.tf:20` (matches)
+- `file:*.tfvars:15` (matches)  
+- `content:terraform:10` (no match)
+
+Calculation:
+- Accumulated: 20 + 15 = 35
+- Max Possible: 20 + 15 + 10 = 45
+- Confidence: (35 / 45) × 100 = 77.78% ≈ 78%
 
 #### Profile JSON Schema
 ```json
