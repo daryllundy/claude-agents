@@ -58,6 +58,8 @@ run_suite "Detection Functions" "$SCRIPT_DIR/unit/test_detection_functions.sh"
 run_suite "Confidence Scoring" "$SCRIPT_DIR/unit/test_confidence_scoring.sh"
 run_suite "Profile Management" "$SCRIPT_DIR/unit/test_profile_management.sh"
 run_suite "Update Detection" "$SCRIPT_DIR/unit/test_update_detection.sh"
+run_suite "Selection State Management" "$SCRIPT_DIR/unit/test_selection_state.sh"
+run_suite "Rendering Functions" "$SCRIPT_DIR/unit/test_rendering.sh"
 
 # Run integration tests
 echo -e "${YELLOW}═══════════════════════════════════════${NC}"
@@ -66,6 +68,19 @@ echo -e "${YELLOW}════════════════════�
 echo ""
 
 run_suite "End-to-End Detection" "$SCRIPT_DIR/integration/test_detection.sh"
+
+# Run interactive tests if expect is available
+if command -v expect &> /dev/null; then
+  run_suite "Interactive Mode" "$SCRIPT_DIR/integration/test_interactive.sh"
+else
+  echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo -e "${YELLOW}SKIP: Interactive Mode Tests${NC}"
+  echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo ""
+  echo "Interactive tests require 'expect' to be installed."
+  echo "To install: brew install expect (macOS) or apt-get install expect (Linux)"
+  echo ""
+fi
 
 # Final summary
 echo ""

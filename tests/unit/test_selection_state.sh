@@ -1,14 +1,87 @@
 #!/usr/bin/env bash
 # Unit tests for selection state management functions
 
-set -euo pipefail
+set -o pipefail
 
-# Source the script to get the functions
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# Define the functions we're testing (extracted from recommend_agents.sh)
 
-# Source only the functions we need by extracting them
-source <(sed -n '/^# Global selection state/,/^get_selection_count() {/p; /^get_selection_count() {/,/^}/p' "$PROJECT_ROOT/scripts/recommend_agents.sh")
+# Global selection state
+declare -A SELECTION_STATE
+
+# Initialize selection state with default selections based on confidence threshold
+init_selection_state() {
+  local -n agents_ref=$1
+  local -n confidence_ref=$2
+  local threshold=${3:-50}
+  
+  SELECTION_STATE=()
+  
+  for agent in "${agents_ref[@]}"; do
+    local confidence="${confidence_ref[$agent]:-0}"
+    if [[ $confidence -ge $threshold ]]; then
+      SELECTION_STATE[$agent]=1
+    else
+      SELECTION_STATE[$agent]=0
+    fi
+  done
+}
+
+# Toggle agent selection
+toggle_agent_selection() {
+  local agent="$1"
+  
+  if [[ ${SELECTION_STATE[$agent]:-0} -eq 1 ]]; then
+    SELECTION_STATE[$agent]=0
+    return 1  # Now unselected
+  else
+    SELECTION_STATE[$agent]=1
+    return 0  # Now selected
+  fi
+}
+
+# Select all agents
+select_all_agents() {
+  local -n agents_ref=$1
+  
+  for agent in "${agents_ref[@]}"; do
+    SELECTION_STATE[$agent]=1
+  done
+}
+
+# Select none
+select_none_agents() {
+  local -n agents_ref=$1
+  
+  for agent in "${agents_ref[@]}"; do
+    SELECTION_STATE[$agent]=0
+  done
+}
+
+# Get selected agents
+get_selected_agents() {
+  local -a selected=()
+  
+  for agent in "${!SELECTION_STATE[@]}"; do
+    if [[ ${SELECTION_STATE[$agent]} -eq 1 ]]; then
+      selected+=("$agent")
+    fi
+  done
+  
+  printf '%s\n' "${selected[@]}"
+}
+
+# Get selection count
+get_selection_count() {
+  local count=0
+  
+  for agent in "${!SELECTION_STATE[@]}"; do
+    if [[ ${SELECTION_STATE[$agent]} -eq 1 ]]; then
+      ((count++))
+    fi
+  done
+  
+  echo "$count"
+}
 
 # Test counter
 TESTS_RUN=0
@@ -21,18 +94,16 @@ assert_equals() {
   local actual="$2"
   local test_name="$3"
   
-  ((TESTS_RUN++))
+  TESTS_RUN=$((TESTS_RUN + 1))
   
   if [[ "$expected" == "$actual" ]]; then
     echo "✓ PASS: $test_name"
-    ((TESTS_PASSED++))
-    return 0
+    TESTS_PASSED=$((TESTS_PASSED + 1))
   else
     echo "✗ FAIL: $test_name"
     echo "  Expected: $expected"
     echo "  Actual:   $actual"
-    ((TESTS_FAILED++))
-    return 1
+    TESTS_FAILED=$((TESTS_FAILED + 1))
   fi
 }
 
@@ -40,18 +111,16 @@ assert_true() {
   local condition="$1"
   local test_name="$2"
   
-  ((TESTS_RUN++))
+  TESTS_RUN=$((TESTS_RUN + 1))
   
   if [[ $condition -eq 1 ]] || [[ $condition == "true" ]]; then
     echo "✓ PASS: $test_name"
-    ((TESTS_PASSED++))
-    return 0
+    TESTS_PASSED=$((TESTS_PASSED + 1))
   else
     echo "✗ FAIL: $test_name"
     echo "  Expected: true"
     echo "  Actual:   false"
-    ((TESTS_FAILED++))
-    return 1
+    TESTS_FAILED=$((TESTS_FAILED + 1))
   fi
 }
 

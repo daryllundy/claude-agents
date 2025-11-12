@@ -1,0 +1,62 @@
+#!/usr/bin/expect -f
+# Test interactive mode navigation
+
+set timeout 5
+set test_name "interactive_navigation"
+
+# Start the script in interactive mode with dry-run
+spawn bash scripts/recommend_agents.sh --interactive --dry-run
+
+# Wait for interactive mode to load
+expect {
+    "Interactive Mode" {
+        send_user "\n✓ Interactive mode loaded successfully\n"
+    }
+    timeout {
+        send_user "\n✗ FAIL: Timeout waiting for interactive mode\n"
+        exit 1
+    }
+}
+
+# Give UI time to render
+sleep 0.5
+
+# Test navigation down (arrow down)
+send "\033\[B"
+sleep 0.3
+
+# Test navigation up (arrow up)
+send "\033\[A"
+sleep 0.3
+
+# Test navigation down again
+send "\033\[B"
+sleep 0.3
+
+send_user "✓ Navigation keys processed\n"
+
+# Confirm with enter to exit
+send "\r"
+
+# Wait for completion
+expect {
+    eof {
+        send_user "✓ Interactive mode exited cleanly\n"
+    }
+    timeout {
+        send_user "✗ FAIL: Timeout waiting for exit\n"
+        exit 1
+    }
+}
+
+# Check exit code
+catch wait result
+set exit_code [lindex $result 3]
+
+if {$exit_code == 0} {
+    send_user "\n✓ PASS: $test_name\n"
+    exit 0
+} else {
+    send_user "\n✗ FAIL: $test_name (exit code: $exit_code)\n"
+    exit 1
+}

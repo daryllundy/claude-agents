@@ -597,6 +597,128 @@ get_selection_count() {
   echo "$count"
 }
 
+# Check terminal capabilities for interactive mode
+check_terminal_capabilities() {
+  # Check if terminal supports required features
+  if [[ ! -t 0 ]] || [[ ! -t 1 ]]; then
+    echo "Error: Interactive mode requires a terminal (stdin and stdout must be TTY)" >&2
+    return 1
+  fi
+  
+  # Check terminal size
+  local rows cols
+  if command -v stty &> /dev/null; then
+    read rows cols < <(stty size 2>/dev/null || echo "24 80")
+  else
+    rows=24
+    cols=80
+  fi
+  
+  if [[ $rows -lt 20 ]] || [[ $cols -lt 60 ]]; then
+    echo "Warning: Terminal size (${rows}x${cols}) may be too small for optimal display" >&2
+    echo "Recommended minimum: 20 rows x 60 columns" >&2
+    echo ""
+  fi
+  
+  return 0
+}
+
+# Cleanup terminal state
+cleanup_terminal() {
+  # Restore terminal settings
+  if command -v stty &> /dev/null; then
+    stty sane 2>/dev/null || true
+  fi
+  
+  # Show cursor
+  if command -v tput &> /dev/null; then
+    tput cnorm 2>/dev/null || true
+  else
+    printf '\033[?25h' # ANSI escape code to show cursor
+  fi
+  
+  # Clear screen on exit
+  clear 2>/dev/null || true
+}
+
+# Safe wrapper for interactive selection with fallback
+safe_interactive_selection() {
+  if ! check_terminal_capabilities; then
+    echo "Falling back to automatic selection (confidence >= 50%)" >&2
+    echo ""
+    
+    # Auto-select agents with confidence >= 50%
+    recommended_agents=()
+    for agent in "${!agent_confidence[@]}"; do
+      if [[ ${agent_confidence[$agent]} -ge 50 ]]; then
+        recommended_agents+=("$agent")
+      fi
+    done
+    
+    log "Auto-selected ${#recommended_agents[@]} agents based on confidence threshold"
+    return 0
+  fi
+  
+  # Set up signal handlers for terminal cleanup
+  trap cleanup_terminal EXIT INT TERM
+  
+  # Terminal is capable, proceed with interactive mode
+  interactive_selection
+  
+  # Clean up after successful completion
+  cleanup_terminal
+}
+
+# Handle keyboard input and return new state
+# Returns: new_index action
+# action can be: continue, confirm, quit
+handle_keyboard_input() {
+  local key="$1"
+  local current_index="$2"
+  local -n agents_ref=$3
+  local max_index=$((${#agents_ref[@]} - 1))
+  
+  local action="continue"
+  
+  # Handle special keys (arrow keys start with escape sequence)
+  if [[ $key == $'\x1b' ]]; then
+    read -rsn2 key
+    case "$key" in
+      '[A')  # Up arrow
+        if [[ $current_index -gt 0 ]]; then
+          ((current_index--))
+        fi
+        ;;
+      '[B')  # Down arrow
+        if [[ $current_index -lt $max_index ]]; then
+          ((current_index++))
+        fi
+        ;;
+    esac
+  else
+    case "$key" in
+      ' ')  # Space - toggle selection
+        local agent="${agents_ref[$current_index]}"
+        toggle_agent_selection "$agent"
+        ;;
+      '')  # Enter - confirm selection
+        action="confirm"
+        ;;
+      'a'|'A')  # Select all
+        select_all_agents agents_ref
+        ;;
+      'n'|'N')  # Select none
+        select_none_agents agents_ref
+        ;;
+      'q'|'Q')  # Quit
+        action="quit"
+        ;;
+    esac
+  fi
+  
+  echo "$current_index $action"
+}
+
 # Interactive selection mode (Task 7)
 interactive_selection() {
   local -a agent_list=("${recommended_agents[@]}")
@@ -613,43 +735,21 @@ interactive_selection() {
     # Read single character
     read -rsn1 key
 
-    # Handle special keys (arrow keys start with escape sequence)
-    if [[ $key == $'\x1b' ]]; then
-      read -rsn2 key
-      case "$key" in
-        '[A')  # Up arrow
-          if [[ $current_index -gt 0 ]]; then
-            ((current_index--))
-          fi
-          ;;
-        '[B')  # Down arrow
-          if [[ $current_index -lt $((${#agent_list[@]} - 1)) ]]; then
-            ((current_index++))
-          fi
-          ;;
-      esac
-    else
-      case "$key" in
-        ' ')  # Space - toggle selection
-          local agent="${agent_list[$current_index]}"
-          toggle_agent_selection "$agent"
-          ;;
-        '')  # Enter - confirm selection
-          break
-          ;;
-        'a'|'A')  # Select all
-          select_all_agents agent_list
-          ;;
-        'n'|'N')  # Select none
-          select_none_agents agent_list
-          ;;
-        'q'|'Q')  # Quit
-          echo ""
-          log "Cancelled by user"
-          exit 0
-          ;;
-      esac
-    fi
+    # Handle input and get new state
+    read new_index action < <(handle_keyboard_input "$key" "$current_index" agent_list)
+    current_index=$new_index
+    
+    # Check action
+    case "$action" in
+      confirm)
+        break
+        ;;
+      quit)
+        echo ""
+        log "Cancelled by user"
+        exit 0
+        ;;
+    esac
   done
 
   clear
@@ -1621,7 +1721,7 @@ if [[ ${#recommended_agents[@]} -gt 0 ]]; then
     echo ""
     log "Entering interactive mode..."
     sleep 1
-    interactive_selection
+    safe_interactive_selection
   else
     display_categorized_results
   fi

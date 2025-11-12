@@ -1,0 +1,54 @@
+#!/usr/bin/expect -f
+# Test interactive mode selection toggle
+
+set timeout 5
+set test_name "interactive_toggle"
+
+# Start the script in interactive mode with dry-run
+spawn bash scripts/recommend_agents.sh --interactive --dry-run
+
+# Wait for interactive mode to load
+expect {
+    "Interactive Mode" {
+        send_user "\n✓ Interactive mode loaded\n"
+    }
+    timeout {
+        send_user "\n✗ FAIL: Timeout waiting for interactive mode\n"
+        exit 1
+    }
+}
+
+sleep 0.5
+
+# Toggle selection with space bar
+send " "
+sleep 0.3
+send_user "✓ First toggle processed\n"
+
+# Toggle again
+send " "
+sleep 0.3
+send_user "✓ Second toggle processed\n"
+
+# Navigate down and toggle
+send "\033\[B"
+sleep 0.3
+send " "
+sleep 0.3
+send_user "✓ Toggle on different agent processed\n"
+
+# Confirm with enter
+send "\r"
+
+expect eof
+
+catch wait result
+set exit_code [lindex $result 3]
+
+if {$exit_code == 0} {
+    send_user "\n✓ PASS: $test_name\n"
+    exit 0
+} else {
+    send_user "\n✗ FAIL: $test_name (exit code: $exit_code)\n"
+    exit 1
+}

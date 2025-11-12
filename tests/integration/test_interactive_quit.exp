@@ -1,0 +1,52 @@
+#!/usr/bin/expect -f
+# Test interactive mode quit command
+
+set timeout 5
+set test_name "interactive_quit"
+
+# Start the script in interactive mode with dry-run
+spawn bash scripts/recommend_agents.sh --interactive --dry-run
+
+# Wait for interactive mode to load
+expect {
+    "Interactive Mode" {
+        send_user "\n✓ Interactive mode loaded\n"
+    }
+    timeout {
+        send_user "\n✗ FAIL: Timeout waiting for interactive mode\n"
+        exit 1
+    }
+}
+
+sleep 0.5
+
+# Press 'q' to quit
+send "q"
+send_user "✓ Quit command processed\n"
+
+expect {
+    "Cancelled by user" {
+        send_user "✓ Quit message displayed\n"
+    }
+    eof {
+        send_user "✓ Process exited\n"
+    }
+    timeout {
+        send_user "✗ FAIL: Timeout waiting for quit\n"
+        exit 1
+    }
+}
+
+expect eof
+
+catch wait result
+set exit_code [lindex $result 3]
+
+# Quit command exits with 0 (it's a clean exit)
+if {$exit_code == 0} {
+    send_user "\n✓ PASS: $test_name\n"
+    exit 0
+} else {
+    send_user "\n✗ FAIL: $test_name (exit code: $exit_code)\n"
+    exit 1
+}

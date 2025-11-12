@@ -1,0 +1,38 @@
+#!/usr/bin/expect -f
+# Test interactive mode confirmation with enter key
+
+set timeout 5
+set test_name "interactive_confirm"
+
+# Start the script in interactive mode with dry-run
+spawn bash scripts/recommend_agents.sh --interactive --dry-run
+
+# Wait for interactive mode to load
+expect {
+    "Interactive Mode" {
+        send_user "\n✓ Interactive mode loaded\n"
+    }
+    timeout {
+        send_user "\n✗ FAIL: Timeout waiting for interactive mode\n"
+        exit 1
+    }
+}
+
+sleep 0.5
+
+# Immediately confirm with enter (should accept default selections)
+send "\r"
+send_user "✓ Confirmation processed\n"
+
+expect eof
+
+catch wait result
+set exit_code [lindex $result 3]
+
+if {$exit_code == 0} {
+    send_user "\n✓ PASS: $test_name\n"
+    exit 0
+} else {
+    send_user "\n✗ FAIL: $test_name (exit code: $exit_code)\n"
+    exit 1
+}

@@ -564,6 +564,42 @@ For additional help, please open an issue on GitHub with:
 - **[examples/README.md](examples/README.md)** - Real-world usage examples and workflows
 - **[archive/README.md](archive/README.md)** - Information about legacy implementations
 
+## Testing
+
+The project includes comprehensive test coverage for all functionality:
+
+- **Unit Tests**: Test individual functions (detection, scoring, rendering, selection state)
+- **Integration Tests**: Test complete workflows (detection, interactive mode, profiles)
+- **Interactive Tests**: Automated testing of the TUI using expect
+
+### Running Tests
+
+```bash
+# Run all tests
+bash tests/run_all_tests.sh
+
+# Run specific test suites
+bash tests/unit/test_selection_state.sh
+bash tests/unit/test_rendering.sh
+bash tests/integration/test_interactive.sh
+```
+
+### Testing Requirements
+
+- **bash** 4.0+ (required)
+- **expect** (optional, for interactive mode tests)
+
+Install expect:
+```bash
+# macOS
+brew install expect
+
+# Ubuntu/Debian
+sudo apt-get install expect
+```
+
+For detailed testing documentation, see [docs/TESTING_INTERACTIVE_MODE.md](docs/TESTING_INTERACTIVE_MODE.md).
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
@@ -573,6 +609,14 @@ Ideas for contributions:
 - Improved agent prompts
 - More usage examples
 - Documentation improvements
+- Test coverage improvements
+
+### Contribution Guidelines
+
+1. Write tests for new features
+2. Ensure all tests pass before submitting PR
+3. Update documentation as needed
+4. Follow existing code style and patterns
 
 ## Support
 
