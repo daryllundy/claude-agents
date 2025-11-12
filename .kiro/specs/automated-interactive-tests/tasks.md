@@ -9,7 +9,7 @@
   - _Requirements: 2.1, 2.2_
   - _Status: COMPLETED - All functions implemented in scripts/recommend_agents.sh_
 
-- [ ] 2. Extract UI rendering into testable functions
+- [x] 2. Extract UI rendering into testable functions
   - Create render_category_header() function for category display
   - Implement render_agent_item() function for individual agent display with selection indicator
   - Create render_confidence_bar() function for visual confidence representation
@@ -18,7 +18,7 @@
   - _Requirements: 2.3, 4.1, 4.2_
   - _Status: PARTIALLY COMPLETE - draw_progress_bar() exists but other rendering functions need extraction from interactive_selection()_
 
-- [ ] 3. Refactor input handling into testable function
+- [x] 3. Refactor input handling into testable function
   - Create handle_keyboard_input() function that processes key events and returns new state
   - Implement arrow key navigation logic (up/down)
   - Add space bar toggle logic
@@ -72,7 +72,7 @@
   - _Requirements: 3.2, 3.3_
   - _Status: NOT STARTED - Depends on Task 7 completion_
 
-- [ ] 9. Add terminal capability checks
+- [x] 9. Add terminal capability checks
   - Implement check_terminal_capabilities() function
   - Add terminal size validation (minimum 20x60)
   - Create safe_interactive_selection() wrapper with fallback
@@ -80,7 +80,7 @@
   - _Requirements: 1.4, 3.1_
   - _Status: NOT STARTED_
 
-- [ ] 10. Add terminal cleanup and signal handling
+- [x] 10. Add terminal cleanup and signal handling
   - Implement cleanup_terminal() function to restore terminal state
   - Add trap handlers for EXIT, INT, and TERM signals
   - Ensure cursor visibility is restored on exit
