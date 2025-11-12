@@ -399,91 +399,216 @@ display_categorized_results() {
   echo ""
 }
 
+# UI Rendering functions (Task 2)
+
+# Render category header
+render_category_header() {
+  local category="$1"
+  local count="$2"
+  
+  echo ""
+  echo "━━ $category ($count agent(s)) ━━"
+  echo ""
+}
+
+# Render confidence bar (alias to existing function for consistency)
+render_confidence_bar() {
+  draw_progress_bar "$@"
+}
+
+# Render agent item
+render_agent_item() {
+  local agent="$1"
+  local confidence="$2"
+  local description="$3"
+  local is_selected="$4"
+  local is_current="$5"
+  
+  # Determine cursor
+  local cursor=" "
+  if [[ $is_current -eq 1 ]]; then
+    cursor=">"
+  fi
+  
+  # Determine checkbox
+  local checkbox="[ ]"
+  if [[ $is_selected -eq 1 ]]; then
+    checkbox="[✓]"
+  fi
+  
+  # Display the agent with confidence bar
+  printf "%s %s %s (%d%%)\n" "$cursor" "$checkbox" "$agent" "$confidence"
+  
+  # Show description if it's the current selection
+  if [[ $is_current -eq 1 ]] && [[ -n "$description" ]]; then
+    printf "      %s\n" "$description"
+  fi
+}
+
+# Render navigation footer
+render_navigation_footer() {
+  local selected_count="$1"
+  local total_count="$2"
+  
+  echo ""
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "Selected: $selected_count / $total_count agents"
+}
+
+# Render complete agent list
+render_agent_list() {
+  local current_index="$1"
+  local -n agents_ref=$2
+  local -n confidence_ref=$3
+  local -n descriptions_ref=$4
+  local -n categories_ref=$5
+  
+  clear
+  echo "═══════════════════════════════════════════════════════════════════════"
+  echo "            Agent Recommendation - Interactive Mode"
+  echo "═══════════════════════════════════════════════════════════════════════"
+  echo ""
+  echo "Use arrow keys to navigate, SPACE to toggle, ENTER to confirm"
+  echo "Commands: a=select all, n=select none, q=quit"
+  
+  # Group agents by category for display
+  declare -A category_agents
+  for agent in "${agents_ref[@]}"; do
+    local category="${categories_ref[$agent]:-Uncategorized}"
+    if [[ -z "${category_agents[$category]}" ]]; then
+      category_agents[$category]="$agent"
+    else
+      category_agents[$category]="${category_agents[$category]} $agent"
+    fi
+  done
+  
+  local display_index=0
+  local -a categories=("Infrastructure (Cloud)" "Infrastructure (IaC)" "Infrastructure (Platform)" "Infrastructure (Containers)" "Infrastructure (Monitoring)" "Development" "Quality" "Operations" "Productivity" "Business" "Specialized" "Uncategorized")
+  
+  for category in "${categories[@]}"; do
+    if [[ -n "${category_agents[$category]}" ]]; then
+      # Count agents in category
+      IFS=' ' read -ra agents <<< "${category_agents[$category]}"
+      local category_count=${#agents[@]}
+      
+      render_category_header "$category" "$category_count"
+      
+      for agent in "${agents[@]}"; do
+        local confidence="${confidence_ref[$agent]:-0}"
+        local description="${descriptions_ref[$agent]:-}"
+        
+        # Determine if this is the current selection
+        local is_current=0
+        if [[ $display_index -eq $current_index ]]; then
+          is_current=1
+        fi
+        
+        # Determine if this agent is selected
+        local is_selected=${SELECTION_STATE[$agent]:-0}
+        
+        render_agent_item "$agent" "$confidence" "$description" "$is_selected" "$is_current"
+        
+        ((display_index++))
+      done
+    fi
+  done
+  
+  local selected_count=$(get_selection_count)
+  render_navigation_footer "$selected_count" "${#agents_ref[@]}"
+}
+
+# Selection state management functions (Task 1)
+
+# Global selection state
+declare -A SELECTION_STATE
+
+# Initialize selection state with default selections based on confidence threshold
+init_selection_state() {
+  local -n agents_ref=$1
+  local -n confidence_ref=$2
+  local threshold=${3:-50}
+  
+  SELECTION_STATE=()
+  
+  for agent in "${agents_ref[@]}"; do
+    local confidence="${confidence_ref[$agent]:-0}"
+    if [[ $confidence -ge $threshold ]]; then
+      SELECTION_STATE[$agent]=1
+    else
+      SELECTION_STATE[$agent]=0
+    fi
+  done
+}
+
+# Toggle agent selection
+toggle_agent_selection() {
+  local agent="$1"
+  
+  if [[ ${SELECTION_STATE[$agent]:-0} -eq 1 ]]; then
+    SELECTION_STATE[$agent]=0
+    return 1  # Now unselected
+  else
+    SELECTION_STATE[$agent]=1
+    return 0  # Now selected
+  fi
+}
+
+# Select all agents
+select_all_agents() {
+  local -n agents_ref=$1
+  
+  for agent in "${agents_ref[@]}"; do
+    SELECTION_STATE[$agent]=1
+  done
+}
+
+# Select none
+select_none_agents() {
+  local -n agents_ref=$1
+  
+  for agent in "${agents_ref[@]}"; do
+    SELECTION_STATE[$agent]=0
+  done
+}
+
+# Get selected agents
+get_selected_agents() {
+  local -a selected=()
+  
+  for agent in "${!SELECTION_STATE[@]}"; do
+    if [[ ${SELECTION_STATE[$agent]} -eq 1 ]]; then
+      selected+=("$agent")
+    fi
+  done
+  
+  printf '%s\n' "${selected[@]}"
+}
+
+# Get selection count
+get_selection_count() {
+  local count=0
+  
+  for agent in "${!SELECTION_STATE[@]}"; do
+    if [[ ${SELECTION_STATE[$agent]} -eq 1 ]]; then
+      ((count++))
+    fi
+  done
+  
+  echo "$count"
+}
+
 # Interactive selection mode (Task 7)
 interactive_selection() {
   local -a agent_list=("${recommended_agents[@]}")
-  local -A selected_agents
   local current_index=0
 
-  # Pre-select agents above 50% confidence
-  for agent in "${agent_list[@]}"; do
-    local confidence="${agent_confidence[$agent]:-0}"
-    if [[ $confidence -ge 50 ]]; then
-      selected_agents[$agent]=1
-    fi
-  done
-
-  # Function to display the interactive UI
-  display_interactive_ui() {
-    clear
-    echo "═══════════════════════════════════════════════════════════════════════"
-    echo "            Agent Recommendation - Interactive Mode"
-    echo "═══════════════════════════════════════════════════════════════════════"
-    echo ""
-    echo "Use arrow keys to navigate, SPACE to toggle, ENTER to confirm"
-    echo "Commands: a=select all, n=select none, q=quit"
-    echo ""
-
-    # Group agents by category for display
-    declare -A category_agents
-    for agent in "${agent_list[@]}"; do
-      local category="${AGENT_CATEGORIES[$agent]:-Uncategorized}"
-      if [[ -z "${category_agents[$category]}" ]]; then
-        category_agents[$category]="$agent"
-      else
-        category_agents[$category]="${category_agents[$category]} $agent"
-      fi
-    done
-
-    local display_index=0
-    local -a categories=("Infrastructure (Cloud)" "Infrastructure (IaC)" "Infrastructure (Platform)" "Infrastructure (Containers)" "Infrastructure (Monitoring)" "Development" "Quality" "Operations" "Productivity" "Business" "Specialized" "Uncategorized")
-
-    for category in "${categories[@]}"; do
-      if [[ -n "${category_agents[$category]}" ]]; then
-        echo "━━ $category ━━"
-
-        IFS=' ' read -ra agents <<< "${category_agents[$category]}"
-        for agent in "${agents[@]}"; do
-          local confidence="${agent_confidence[$agent]:-0}"
-          local description="${AGENT_DESCRIPTIONS[$agent]:-}"
-
-          # Determine if this is the current selection
-          local cursor=" "
-          if [[ $display_index -eq $current_index ]]; then
-            cursor=">"
-          fi
-
-          # Determine if this agent is selected
-          local checkbox="[ ]"
-          if [[ ${selected_agents[$agent]:-0} -eq 1 ]]; then
-            checkbox="[✓]"
-          fi
-
-          # Display the agent
-          printf "%s %s %s (%d%%)\n" "$cursor" "$checkbox" "$agent" "$confidence"
-
-          # Show description if it's the current selection
-          if [[ $display_index -eq $current_index ]] && [[ -n "$description" ]]; then
-            printf "      %s\n" "$description"
-          fi
-
-          ((display_index++))
-        done
-        echo ""
-      fi
-    done
-
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    local selected_count=0
-    for agent in "${agent_list[@]}"; do
-      [[ ${selected_agents[$agent]:-0} -eq 1 ]] && ((selected_count++))
-    done
-    echo "Selected: $selected_count / ${#agent_list[@]} agents"
-  }
+  # Initialize selection state using new function
+  init_selection_state agent_list agent_confidence 50
 
   # Main interactive loop
   while true; do
-    display_interactive_ui
+    # Render UI using extracted function
+    render_agent_list "$current_index" agent_list agent_confidence AGENT_DESCRIPTIONS AGENT_CATEGORIES
 
     # Read single character
     read -rsn1 key
@@ -507,22 +632,16 @@ interactive_selection() {
       case "$key" in
         ' ')  # Space - toggle selection
           local agent="${agent_list[$current_index]}"
-          if [[ ${selected_agents[$agent]:-0} -eq 1 ]]; then
-            unset selected_agents[$agent]
-          else
-            selected_agents[$agent]=1
-          fi
+          toggle_agent_selection "$agent"
           ;;
         '')  # Enter - confirm selection
           break
           ;;
         'a'|'A')  # Select all
-          for agent in "${agent_list[@]}"; do
-            selected_agents[$agent]=1
-          done
+          select_all_agents agent_list
           ;;
         'n'|'N')  # Select none
-          selected_agents=()
+          select_none_agents agent_list
           ;;
         'q'|'Q')  # Quit
           echo ""
@@ -535,13 +654,11 @@ interactive_selection() {
 
   clear
 
-  # Return selected agents by updating recommended_agents array
+  # Return selected agents by updating recommended_agents array using new function
   recommended_agents=()
-  for agent in "${agent_list[@]}"; do
-    if [[ ${selected_agents[$agent]:-0} -eq 1 ]]; then
-      recommended_agents+=("$agent")
-    fi
-  done
+  while IFS= read -r agent; do
+    [[ -n "$agent" ]] && recommended_agents+=("$agent")
+  done < <(get_selected_agents)
 
   log "Selected ${#recommended_agents[@]} agents for installation"
 }
