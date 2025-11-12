@@ -162,22 +162,112 @@ log() {
 
 # Enhanced error handling (Task 11)
 
+# Cache directory for downloaded files
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/claude-agents"
+CACHE_EXPIRY_SECONDS=$((24 * 60 * 60))  # 24 hours
+
+# Initialize cache directory
+init_cache() {
+  if [[ ! -d "$CACHE_DIR" ]]; then
+    mkdir -p "$CACHE_DIR" 2>/dev/null || {
+      echo "Warning: Could not create cache directory: $CACHE_DIR" >&2
+      return 1
+    }
+  fi
+  return 0
+}
+
+# Get cache path for a URL
+get_cache_path() {
+  local url="$1"
+  local url_hash
+  
+  if command -v md5 &> /dev/null; then
+    url_hash=$(echo -n "$url" | md5)
+  elif command -v md5sum &> /dev/null; then
+    url_hash=$(echo -n "$url" | md5sum | cut -d' ' -f1)
+  else
+    # Fallback: use simple hash
+    url_hash=$(echo -n "$url" | cksum | cut -d' ' -f1)
+  fi
+  
+  echo "$CACHE_DIR/$url_hash"
+}
+
+# Check if cache is fresh
+is_cache_fresh() {
+  local cache_file="$1"
+  local expiry="${2:-$CACHE_EXPIRY_SECONDS}"
+  
+  if [[ ! -f "$cache_file" ]]; then
+    return 1
+  fi
+  
+  local current_time=$(date +%s)
+  local file_time
+  
+  # Platform-specific stat command
+  if [[ "$(uname)" == "Darwin" ]]; then
+    file_time=$(stat -f %m "$cache_file" 2>/dev/null || echo "0")
+  else
+    file_time=$(stat -c %Y "$cache_file" 2>/dev/null || echo "0")
+  fi
+  
+  local age=$((current_time - file_time))
+  
+  [[ $age -lt $expiry ]]
+}
+
+# Fetch with caching support
+fetch_with_cache() {
+  local url="$1"
+  local output="$2"
+  local expiry="${3:-$CACHE_EXPIRY_SECONDS}"
+  local force_refresh="${4:-false}"
+  
+  init_cache || return 1
+  
+  local cache_file
+  cache_file=$(get_cache_path "$url")
+  
+  # Use cache if fresh and not forcing refresh
+  if [[ $force_refresh == false ]] && is_cache_fresh "$cache_file" "$expiry"; then
+    if [[ ${VERBOSE:-false} == true ]]; then
+      log "Using cached version of $(basename "$url")"
+    fi
+    cp "$cache_file" "$output"
+    return 0
+  fi
+  
+  # Fetch and cache
+  if fetch_with_retry "$url" "$output"; then
+    cp "$output" "$cache_file" 2>/dev/null || true
+    return 0
+  fi
+  
+  return 1
+}
+
 # Network error handling with retry and exponential backoff
 fetch_with_retry() {
   local url="$1"
   local output="$2"
-  local max_attempts=3
+  local max_attempts="${3:-3}"
+  local timeout="${4:-30}"
   local attempt=1
   local backoff=2
 
   while [[ $attempt -le $max_attempts ]]; do
     # Try to fetch with timeout
-    if curl -fsSL --max-time 30 "$url" -o "$output" 2>/dev/null; then
+    if curl -fsSL --max-time "$timeout" "$url" -o "$output" 2>/dev/null; then
+      if [[ ${VERBOSE:-false} == true ]]; then
+        log "Successfully downloaded $(basename "$url")"
+      fi
       return 0
     fi
 
     # Get HTTP status code for better error messages
-    local http_code=$(curl -fsSL -w "%{http_code}" --max-time 30 -o /dev/null "$url" 2>/dev/null || echo "000")
+    local http_code=$(curl -fsSL -w "%{http_code}" --max-time "$timeout" -o /dev/null "$url" 2>/dev/null || echo "000")
 
     if [[ $attempt -lt $max_attempts ]]; then
       log "Attempt $attempt/$max_attempts failed (HTTP $http_code). Retrying in ${backoff}s..."
