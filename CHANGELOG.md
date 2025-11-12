@@ -5,6 +5,77 @@ All notable changes to the Claude Code Agents project will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2024-11-12
+
+### Added - YAML-Based Detection Patterns System
+
+#### Modular Pattern Architecture
+- **Externalized Detection Patterns**: Moved all detection patterns from bash script to modular YAML files
+- **Category-Based Organization**: Separate YAML files for each agent category (business, development, infrastructure, operations, productivity, quality, specialized)
+- **Comprehensive Pattern Library**: 8 YAML files covering all 24 agents with detailed detection patterns
+- **Schema Documentation**: Complete pattern schema documentation in `data/patterns/SCHEMA.md`
+- **Quick Reference Guide**: Pattern syntax and examples in `data/patterns/QUICK_REFERENCE.md`
+- **Example Template**: Starter template in `data/patterns/example.yml` for creating new patterns
+
+#### Pattern Features
+- **Use Case Metadata**: Each agent includes use cases, examples, and when to use guidance
+- **Rich Pattern Types**: Support for file, path, content, and extension patterns
+- **Weighted Scoring**: Configurable weights for each pattern (0-25)
+- **Pattern Descriptions**: Human-readable descriptions for each detection pattern
+- **Maintainability**: Easy to update patterns without modifying bash script logic
+
+#### Testing Infrastructure
+- **Pattern Loading Tests**: `test_pattern_loading.sh` validates YAML parsing and pattern extraction
+- **Use Case Metadata Tests**: `test_use_case_metadata.sh` verifies use case information extraction
+- **Simple Use Case Tests**: `test_use_case_simple.sh` for basic use case validation
+- **YAML Parser Tests**: `test_yaml_parser.sh` for low-level YAML parsing validation
+
+#### Documentation
+- **Pattern System README**: Comprehensive guide in `data/patterns/README.md`
+- **Schema Reference**: Detailed schema documentation with examples
+- **Quick Reference**: Fast lookup guide for pattern syntax
+- **Integration Guide**: How to add new patterns and extend the system
+
+#### Script Enhancements
+- **YAML Pattern Loading**: Updated `recommend_agents.sh` to load patterns from YAML files
+- **Backward Compatibility**: Maintains all existing functionality while using new pattern system
+- **Use Case Display**: Shows relevant use cases and examples in agent recommendations
+- **Pattern Source Tracking**: Tracks which YAML file each pattern comes from
+
+### Changed
+- **Pattern Management**: Detection patterns now managed in YAML instead of hardcoded in bash
+- **Extensibility**: Much easier to add new agents and patterns without bash scripting knowledge
+- **Maintainability**: Patterns can be updated independently of script logic
+- **Documentation**: Pattern documentation lives alongside pattern definitions
+
+### Technical Details
+
+#### YAML Pattern Structure
+```yaml
+agents:
+  - name: agent-name
+    category: category-name
+    use_cases:
+      - "Use case description"
+    examples:
+      - "Example scenario"
+    when_to_use: "Guidance on when to use this agent"
+    patterns:
+      - type: file|path|content|extension
+        pattern: "pattern-string"
+        weight: 0-25
+        description: "What this pattern detects"
+```
+
+#### Pattern Files
+- `business.yml`: Architecture, compliance, localization, validation agents
+- `development.yml`: Database, frontend, mobile development agents
+- `infrastructure.yml`: AWS, Azure, GCP, Terraform, Ansible, Docker, Kubernetes, CI/CD, monitoring agents
+- `operations.yml`: Dependency, Git, migration agents
+- `productivity.yml`: Debugging, documentation, scaffolding agents
+- `quality.yml`: Code review, performance, refactoring, security, testing agents
+- `specialized.yml`: Data science agent
+
 ## [2.0.0] - 2024-11-11
 
 ### Added - Agent Recommendation Script Enhancements
